@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import configparser
 import base64
+import threading
+import time
 
 import sys
 import os
@@ -13,12 +15,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from bitrix import *
 from project_data import project_data
 
+from get_token import send_heartbeat
+
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 TOKEN_B24 = config.get('bitrix', 'token')
-API_URL_YS = config.get('yeastar', 'api_url')
 DEFAULT_PHONE = config.get('bitrix', 'default_phone')
+API_URL_YS = config.get('yeastar', 'api_url')
+UPD_PERIOD = config.getint('yeastar', 'upd_period')
+EDPOINT_PORT = config.get('yeastar', 'end_port')
 
 
 STATUSES = {
@@ -28,10 +34,15 @@ STATUSES = {
     'BUSY': 486,
 }
 
-r = redis.Redis(host='localhost', port=6379, db=1)
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 
 app = Flask(__name__)
+
+def update_heartbeat_periodically():
+    while True:
+        send_heartbeat()
+        time.sleep(UPD_PERIOD)
 
 @app.route('/', methods=['GET', 'POST'])
 def project_info():
@@ -166,4 +177,8 @@ async def b24_handler():
         return 'Not supported event', 400
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=8000)
+    updater_thread = threading.Thread(target=update_heartbeat_periodically)
+    updater_thread.daemon = True
+    updater_thread.start()
+
+    app.run(debug=True, host='0.0.0.0', port=EDPOINT_PORT)
