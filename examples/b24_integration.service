@@ -9,7 +9,7 @@ User=nobody
 Group=nobody
 WorkingDirectory=/opt/bitrix-asterisk
 Environment="PATH=/opt/bitrix-asterisk/.venv/bin"
-ExecStart=/opt/bitrix-asterisk/.venv/bin/python ami_cel.py
+ExecStart=/opt/bitrix-asterisk/.venv/bin/python ami/app.py
 
 [Install]
 WantedBy=multi-user.target
