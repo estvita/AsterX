@@ -60,7 +60,7 @@ source .venv/bin/activate
 + AMI - python ami/engine.py
 + ARI + Click2call - python ari/app.py
 + AMI + Click2call - python ami/app.py
-+ [Yeastar API](/yeastar/) - python yestar/app.py
++ Yeastar API - python yestar/app.py
 
 ```
 
