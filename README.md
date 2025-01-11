@@ -52,6 +52,9 @@ nano config.ini
 + [logging] - True/False - включить/отключить запись получаемых событий в файл.
 
 ## Запуск интеграции
+```
+cd /opt/bitrix-asterisk
+source .venv/bin/activate
 
 + ARI - python ari/engine.py
 + AMI - python ami/engine.py
@@ -59,5 +62,13 @@ nano config.ini
 + AMI + Click2call - python ami/app.py
 + [Yeastar API](/yeastar/) - python yestar/app.py
 
+```
 
+## Автоматический запуск 
 Пример конфигурации [systemd](/examples/b24_integration.service) для автоматического запуска
+
+```
+cp /opt/bitrix-asterisk/examples/b24_integration.service /etc/systemd/system/b24_integration.service
+systemctl enable b24_integration.service
+systemctl start b24_integration.service
+```
