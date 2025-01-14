@@ -2,7 +2,7 @@
 
 [Инструкция на русском](README.ru.md)
 
-Tested with Asterisk v. 16, 18, 20 (FreePBX) - if the context names used in the filters differ from those in your system, replace them accordingly.
+Tested with Asterisk v. 16, 18, 20 (FreePBX) and [Yeastar](/yeastar/) S50 - if the context names used in the filters differ from those in your system, replace them accordingly.
 
 This script allows sending call history and recording files from Asterisk (FreePBX) to Bitrix24.
 
