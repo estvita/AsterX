@@ -1,18 +1,21 @@
-# Bitrix AMI/ARI 
+# Sync calls with Bitrix24 via ARI, AMI or API (Yeastar)
 
-Протестировано с Asterisk v. 16, 18, 20 (FreePBX) - если названия используемых в фильтрах контекстов, отличаются от используемых в вашей системе - замените их.
+[Инструкция на русском](README.ru.md)
 
-Скрипт позволяет отправлять историю звонков и файлы записей из Asterisk (FreePBX) в Битрикс24
+Tested with Asterisk v. 16, 18, 20 (FreePBX) - if the context names used in the filters differ from those in your system, replace them accordingly.
 
-Работает с AMI событиями [CEL](/ami_cel.py) или [ARI](/ari_engine.py)
+This script allows sending call history and recording files from Asterisk (FreePBX) to Bitrix24.
 
-## Настройка на стороне Битрикс24
-+ Входящий вебхук с правами: crm, user, telephony. Интеграции > Rest API > Другое > Входящий вебхук
-+ Исходящий вебхук для события ONEXTERNALCALLSTART (звонок по клику)
+It works with AMI events [CEL](/ami_cel.py) or [ARI](/ari_engine.py).
 
-### Установка 
+## Configuration on the Bitrix24 Side
++ Incoming webhook with permissions: crm, user, telephony. Integrations > Rest API > Other > Incoming Webhook.
++ Outgoing webhook for the ONEXTERNALCALLSTART event (click-to-call).
 
-Для временного хранения информации о звонках используется [RedisJSON](https://github.com/RedisJSON/RedisJSON) 
+### Installation
+
+[RedisJSON](https://github.com/RedisJSON/RedisJSON) is used for temporary storage of call information.
+
 ```
 docker run -p 6379:6379 --name redis-stack redis/redis-stack:latest
 ```
@@ -25,33 +28,34 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp examples/config.ini config.ini
-nano config.ini
+nano 
 ```
- 
-### Заполнить данные в [config.ini](examples/config.ini)
 
-Описание параметров [bitrix]
-+ [url] - Адрес воходящего вебхука.
-+ [token] - Выдаётся Битриксом при создании исходящего вебхука
-+ [crm_create] - Создавать или нет сущность CRM (1/0)
-+ [show_card] - Показывать или нет карточку клиента (1/0)
-+ [default_phone] - Внутренний номер по умолчанию (должен быть указан в настройках телефонии - пользователи телефонии).
+### Fill in the Data in [config.ini](examples/config.ini)
 
-Описание параметров [asterisk]
-+ [ws_type] - wss/ws - требуестя при подключении к ARI
-+ [host] - адрес ATC (example.com)
-+ [port] - AMI/ARI порт
-+ [username] - AMI/ARI пользователь
-+ [secret] - AMI/ARI пароль
-+ [records_url] - url с записями звонков с HTTP Basic Auth (https://example.com/monitor/). Пример конфига [Apache](examples/monitor.conf)
-+ [record_user] - логин Basic Auth
-+ [record_pass] - пароль Basic Auth
-+ [loc_count] - количество знаков внутренних номеров. Если поставить 0, то внутренние звонки тоже будет передаваться в битрикс
-+ [loc_contexts] - список контекстов внутренних (исходящие) вызовов. По умолчанию "from-internal"
-+ [out_contexts] - список контекстов внешних вызовов. По умолчанию "from-pstn"
-+ [logging] - True/False - включить/отключить запись получаемых событий в файл.
+Description of [bitrix] parameters:
++ [url] - Address of the incoming webhook.
++ [token] - Issued by Bitrix when creating an outgoing webhook.
++ [crm_create] - Whether to create a CRM entity or not (1/0).
++ [show_card] - Whether to display the client card or not (1/0).
++ [default_phone] - Default internal number (must be specified in telephony settings - telephony users).
 
-## Запуск интеграции
+Description of [asterisk] parameters:
++ [ws_type] - wss/ws - required for connecting to ARI.
++ [host] - PBX address (example.com).
++ [port] - AMI/ARI port.
++ [username] - AMI/ARI username.
++ [secret] - AMI/ARI password.
++ [records_url] - URL for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf).
++ [record_user] - Basic Auth login.
++ [record_pass] - Basic Auth password.
++ [loc_count] - Number of digits for internal extensions. If set to 0, internal calls will also be sent to Bitrix.
++ [loc_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".
++ [out_contexts] - List of external call contexts. Default: "from-pstn".
++ [logging] - True/False - Enable/disable logging of received events to a file.
+
+## Running the Integration
+
 ```
 cd /opt/bitrix-asterisk
 source .venv/bin/activate
@@ -64,8 +68,9 @@ source .venv/bin/activate
 
 ```
 
-## Автоматический запуск 
-Пример конфигурации [systemd](/examples/b24_integration.service) для автоматического запуска
+
+## Automatic Startup
+Example [systemd](/examples/b24_integration.service) configuration for automatic startup:
 
 ```
 cp /opt/bitrix-asterisk/examples/b24_integration.service /etc/systemd/system/b24_integration.service

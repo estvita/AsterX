@@ -1,8 +1,8 @@
-+ [Включить API ](https://help.yeastar.com/en/s-series-developer/api/enable_api_access_on_pbx.html)
-+ Логин и пароль вписать в config.ini секция yeastar
-+ end_port - порт конечной точки для приема вехуков из АТС (сервер на котором запущена эта интеграция)
-+ upd_period = 1500 - период подтверждения токена, до 30 имн. (https://help.yeastar.com/en/s-series-developer-v2/api-v2/heartbeat.html)
-+ Запустить [app.py](app.py), токен будет получен автоматически и записан в Redis
++ [Enable API](https://help.yeastar.com/en/s-series-developer/api/enable_api_access_on_pbx.html)
++ Login and password enter in config.ini section yeastar
++ end_port - endpoint port for receiving webhooks from PBX (the server on which this integration is running)
++ upd_period = 1500 - token confirmation period, up to 30 min. (https://help.yeastar.com/en/s-series-developer-v2/api-v2/heartbeat.html)
++ Run [app.py](app.py), the token will be received automatically and written to Redis
 
 
 ```
