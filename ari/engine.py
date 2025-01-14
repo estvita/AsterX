@@ -5,12 +5,15 @@ import websocket
 import time
 import json
 import redis
+import base64
+import requests
 import configparser
 from datetime import datetime
 import logging
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from bitrix import *
+import bitrix
 from utils import setup_logger
 
 websocket.enableTrace(False)
@@ -29,6 +32,9 @@ DEFAULT_PHONE = config.get('bitrix', 'default_phone')
 LOCAL_COUNT = config.getint('asterisk', 'loc_count')
 LOGGING = config.getboolean('asterisk', 'logging')
 SHOW_CARD = config.getint('bitrix', 'show_card')
+RECORD_URL = config.get('asterisk', 'records_url')
+RECORD_USER = config.get('asterisk', 'record_user')
+RECORD_PASS = config.get('asterisk', 'record_pass')
 
 
 STATUS_CODES = {
@@ -92,7 +98,7 @@ def on_message(ws, message):
                 'type': 2
             })
 
-        call_data['call_id'] = register_call(call_data)
+        call_data['call_id'] = bitrix.register_call(call_data)
         r.json().set(channel_id, "$", call_data)
 
     elif event_type == 'ChannelDialplan' and event['dialplan_app'] == 'GotoIf' and context in LOC_CONTEXTS:
@@ -126,12 +132,12 @@ def on_message(ws, message):
                         internal = match.group(0)
                         r.json().set(channel_id, "$.internal", internal)
                         if SHOW_CARD == 1:
-                            card_action(call_id, internal, 'show')
+                            bitrix.card_action(call_id, internal, 'show')
                     if dialstatus in ['NOANSWER', 'BUSY'] and SHOW_CARD == 1:
                         peer_name = event.get('peer').get('name')
                         match = re.search(pattern, peer_name)
                         internal = match.group(0)
-                        card_action(call_id, internal, 'hide')
+                        bitrix.card_action(call_id, internal, 'hide')
                 
                 if dialstatus == 'ANSWER':
                     r.json().set(channel_id, "$.status", 200)
@@ -158,8 +164,14 @@ def on_message(ws, message):
             cause = str(event['cause'])
             call_data['status'] = call_data.get('status', STATUS_CODES.get(cause, 304))
 
-            resp = finish_call(call_data)
+            resp = bitrix.finish_call(call_data)
             if resp.status_code == 200:
+                if call_data['status'] == 200 and call_data.get('file_path'):
+                    file_data = requests.get(f'{RECORD_URL}{call_data["file_path"]}', auth=(RECORD_USER, RECORD_PASS))
+                    if file_data.status_code == 200:
+                        file_content = file_data.content
+                        file_base64 = base64.b64encode(file_content).decode('utf-8')
+                        bitrix.upload_file(call_data, file_base64)
                 r.json().delete(channel_id, "$")
 
 
