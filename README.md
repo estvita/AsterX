@@ -6,8 +6,6 @@ Tested with Asterisk v. 16, 18, 20 (FreePBX) and [Yeastar](/yeastar/) S50 - if t
 
 This script allows sending call history and recording files from Asterisk (FreePBX) to Bitrix24.
 
-It works with AMI events [CEL](/ami_cel.py) or [ARI](/ari_engine.py).
-
 ## Configuration on the Bitrix24 Side
 + Incoming webhook with permissions: crm, user, telephony. Integrations > Rest API > Other > Incoming Webhook.
 + Outgoing webhook for the ONEXTERNALCALLSTART event (click-to-call).
