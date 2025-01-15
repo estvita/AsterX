@@ -28,7 +28,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp examples/config.ini config.ini
-nano 
+nano config.ini
 ```
 
 ### Fill in the Data in [config.ini](examples/config.ini)
