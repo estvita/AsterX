@@ -162,7 +162,7 @@ async def ami_callback(mngr: Manager, message: Message):
             call_data['duration'] = round(time.time() - call_data['start_time'])
             resp = bitrix.finish_call(call_data)
             if resp.status_code == 200:
-                if call_data['status'] == 200 and call_data.get('file_path'):
+                if call_data['status'] == 200 and call_data.get('file_path') and RECORD_URL:
                     file_data = requests.get(f'{RECORD_URL}{call_data["file_path"]}', auth=(RECORD_USER, RECORD_PASS))
                     if file_data.status_code == 200:
                         file_content = file_data.content
