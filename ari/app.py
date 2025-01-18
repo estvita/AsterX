@@ -4,8 +4,8 @@ import os
 from flask import Flask, request, jsonify
 import threading
 import configparser
-import engine
-import originate
+from ari import engine
+from ari import originate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from bitrix import *

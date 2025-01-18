@@ -5,8 +5,8 @@ import configparser
 import asyncio
 import threading
 
-import engine
-import originate
+from ami import engine
+from ami import originate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from bitrix import *

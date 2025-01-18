@@ -31,6 +31,7 @@ nano config.ini
 [app]
 + [debug] - Режим отладки (True/False)
 + [port] - Порт запуска приложения 8000
++ [engine] - ami, ari или yeastar для запуска приложения с gunicorn
 
 [bitrix]
 + [url] - Адрес воходящего вебхука.
@@ -58,11 +59,10 @@ nano config.ini
 cd /opt/bitrix-asterisk
 source .venv/bin/activate
 
-+ ARI - python ari/engine.py
-+ AMI - python ami/engine.py
-+ ARI + Click2call - python ari/app.py
-+ AMI + Click2call - python ami/app.py
-+ Yeastar API - python yeastar/app.py
++ ARI: python ari/engine.py
++ AMI: python ami/engine.py
++ Click2call: gunicorn --bind 0.0.0.0:8000 wsgi:app
++ Yeastar API: python yeastar/app.py
 
 ```
 
