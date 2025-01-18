@@ -1,7 +1,7 @@
 # /etc/systemd/system
 
 [Unit]
-Description=B24 asterisk integration
+Description=B24 click2call
 After=network.target
 
 [Service]
@@ -9,7 +9,7 @@ User=nobody
 Group=nobody
 WorkingDirectory=/opt/bitrix-asterisk
 Environment="PATH=/opt/bitrix-asterisk/.venv/bin"
-ExecStart=/opt/bitrix-asterisk/.venv/bin/python ami/engine.py
+ExecStart=/opt/bitrix-asterisk/.venv/bin/python gunicorn --bind 0.0.0.0:8000 wsgi:app
 
 [Install]
 WantedBy=multi-user.target
