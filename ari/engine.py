@@ -166,7 +166,7 @@ def on_message(ws, message):
 
             resp = bitrix.finish_call(call_data)
             if resp.status_code == 200:
-                if call_data['status'] == 200 and call_data.get('file_path') and RECORD_URL:
+                if call_data.get('status', None) == 200 and call_data.get('file_path') and RECORD_URL:
                     file_data = requests.get(f'{RECORD_URL}{call_data["file_path"]}', auth=(RECORD_USER, RECORD_PASS))
                     if file_data.status_code == 200:
                         file_content = file_data.content

@@ -23,7 +23,7 @@ app = Flask(__name__)
 def project_info():
     return jsonify(project_data)
 
-@app.route('/bitrix', methods=['POST'])
+@app.route('/click2call', methods=['POST'])
 async def b24_handler():
     application_token = request.form.get('auth[application_token]')
     if application_token != TOKEN:
