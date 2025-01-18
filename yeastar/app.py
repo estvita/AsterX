@@ -20,11 +20,12 @@ from get_token import send_heartbeat
 
 config = configparser.ConfigParser()
 config.read('config.ini')
+APP_DEBUG = config.get('app', 'debug')
+APP_PORT = config.get('app', 'port')
 TOKEN_B24 = config.get('bitrix', 'token')
 DEFAULT_PHONE = config.get('bitrix', 'default_phone')
 API_URL_YS = config.get('yeastar', 'api_url')
 UPD_PERIOD = config.getint('yeastar', 'upd_period')
-EDPOINT_PORT = config.get('yeastar', 'end_port')
 
 
 STATUSES = {
@@ -181,4 +182,4 @@ if __name__ == '__main__':
     updater_thread.daemon = True
     updater_thread.start()
 
-    app.run(debug=True, host='0.0.0.0', port=EDPOINT_PORT)
+    app.run(debug=APP_DEBUG, host='0.0.0.0', port=APP_PORT)

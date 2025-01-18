@@ -2,7 +2,7 @@ import configparser
 import hashlib
 import requests
 import redis
-# Коннект к Redis
+
 r = redis.Redis(host='localhost', port=6379, db=0)
 
 config = configparser.ConfigParser()
@@ -11,7 +11,7 @@ config.read('config.ini')
 API_USER = config.get('yeastar', 'api_user')
 API_PASS = config.get('yeastar', 'api_pass')
 API_URL = config.get('yeastar', 'api_url')
-EDPOINT_PORT = config.get('yeastar', 'end_port')
+APP_PORT = config.get('app', 'port')
 
 def get_token():
 
@@ -20,7 +20,7 @@ def get_token():
     payload = {
         'username': API_USER,
         'password': md5_hash,
-        'port': EDPOINT_PORT,
+        'port': APP_PORT,
         'url': 'yeastar'
     }
 

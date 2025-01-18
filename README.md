@@ -32,14 +32,18 @@ nano config.ini
 
 ### Fill in the Data in [config.ini](examples/config.ini)
 
-Description of [bitrix] parameters:
+[app]
++ [debug] - Debug mode (True/False)
++ [port] - Flask app port: 8000
+
+[bitrix] parameters:
 + [url] - Address of the incoming webhook.
 + [token] - Issued by Bitrix when creating an outgoing webhook.
 + [crm_create] - Whether to create a CRM entity or not (1/0).
 + [show_card] - Whether to display the client card or not (1/0).
 + [default_phone] - Default internal number (must be specified in telephony settings - telephony users).
 
-Description of [asterisk] parameters:
+[asterisk] parameters:
 + [ws_type] - wss/ws - required for connecting to ARI.
 + [host] - PBX address (example.com).
 + [port] - AMI/ARI port.

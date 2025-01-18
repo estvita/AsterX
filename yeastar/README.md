@@ -12,5 +12,4 @@ api_url = http://192.168.1.10:8088/api/v2.0.0/
 api_user = pbx
 api_pass = pass
 upd_period = 1500
-end_port = 8000
 ```

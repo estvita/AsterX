@@ -14,6 +14,8 @@ from project_data import project_data
 
 config = configparser.ConfigParser()
 config.read('config.ini')
+APP_DEBUG = config.get('app', 'debug')
+APP_PORT = config.get('app', 'port')
 TOKEN = config.get('bitrix', 'token')
 
 app = Flask(__name__)
@@ -59,4 +61,4 @@ if __name__ == '__main__':
     ami_thread = threading.Thread(target=run_engine, daemon=True)
     ami_thread.start()
     
-    app.run(debug=True, host='0.0.0.0', port=8000, use_reloader=False)
+    app.run(debug=APP_DEBUG, host='0.0.0.0', port=APP_PORT, use_reloader=False)
