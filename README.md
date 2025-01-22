@@ -9,7 +9,7 @@ This script allows sending call history and recording files from Asterisk (FreeP
 ## Configuration on the Bitrix24 Side
 + Incoming webhook with permissions: crm, user, telephony. Integrations > Rest API > Other > Incoming Webhook.
 + Outgoing webhook for the ONEXTERNALCALLSTART event (click-to-call). In the "URL of your handler" field, enter the address
- http://X.X.X.X:8000/bitrix
+ http://X.X.X.X:8000/click2call
 
 ### Installation
 
