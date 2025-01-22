@@ -9,7 +9,7 @@ User=nobody
 Group=nobody
 WorkingDirectory=/opt/bitrix-asterisk
 Environment="PATH=/opt/bitrix-asterisk/.venv/bin"
-ExecStart=/opt/bitrix-asterisk/.venv/bin/python ami/engine.py
+ExecStart=/opt/bitrix-asterisk/.venv/bin/python main.py
 
 [Install]
 WantedBy=multi-user.target

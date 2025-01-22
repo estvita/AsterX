@@ -31,7 +31,7 @@ nano config.ini
 [app]
 + [debug] - Режим отладки (True/False)
 + [port] - Порт запуска приложения 8000
-+ [engine] - ami, ari или yeastar для запуска приложения с gunicorn
++ [engine] - ami, ari для запуска приложения с gunicorn
 
 [bitrix]
 + [url] - Адрес воходящего вебхука.

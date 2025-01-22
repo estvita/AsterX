@@ -35,7 +35,7 @@ nano config.ini
 [app]
 + [debug] - Debug mode (True/False)
 + [port] - Flask app port: 8000
-+ [engine] - ami, ari or yeastar to launch the application with gunicorn
++ [engine] - ami, ari to launch the application with gunicorn
 
 [bitrix] parameters:
 + [url] - Address of the incoming webhook.
@@ -64,8 +64,7 @@ nano config.ini
 cd /opt/bitrix-asterisk
 source .venv/bin/activate
 
-+ ARI: python ari/engine.py
-+ AMI: python ami/engine.py
++ ARI/AMI: python main.py
 + Click2call: gunicorn --bind 0.0.0.0:8000 wsgi:app
 + Yeastar API: python yeastar/app.py
 

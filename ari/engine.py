@@ -184,7 +184,8 @@ def on_close(ws):
 def on_open(ws):
     print("Opened connection")
 
-def run_websocket():
+def run():
+    print(f"ARI engine started")
     while True:
         ws = websocket.WebSocketApp(f"{WS_TYPE}://{HOST}:{PORT}/ari/events?api_key={USER}:{SECRET}&app=thoth&subscribeAll=true",
                                     on_message=on_message,
@@ -196,4 +197,4 @@ def run_websocket():
 
 
 if __name__ == '__main__':
-    run_websocket()
+    run()

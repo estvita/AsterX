@@ -48,7 +48,7 @@ async def b24_handler():
         return 'Not supported event', 400
 
 def run_engine():
-    engine.run_websocket()
+    engine.run()
 
 if __name__ == '__main__':
     # Запуск WebSocket клиента в отдельном потоке

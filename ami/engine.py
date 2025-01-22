@@ -171,5 +171,9 @@ async def ami_callback(mngr: Manager, message: Message):
                 r.json().delete(linked_id, "$")
 
 
-if __name__ == '__main__':
+def run():
+    print(f"AMI engine started")
     manager.connect(run_forever=True)
+
+if __name__ == '__main__':
+    run()
