@@ -55,7 +55,7 @@ nano config.ini
 + [record_pass] - Basic Auth password.
 + [loc_count] - Number of digits for internal extensions. If set to 0, internal calls will also be sent to Bitrix.
 + [loc_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".
-+ [out_contexts] - List of external call contexts. Default: "from-pstn".
++ [in_contexts] - List of inbound call contexts. Default: "from-pstn".
 + [logging] - True/False - Enable/disable logging of received events to a file.
 
 ## Running the Integration

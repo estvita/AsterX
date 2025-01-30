@@ -22,7 +22,7 @@ config = configparser.ConfigParser()
 config.read(config_file)
 
 LOC_CONTEXTS = config.get('asterisk', 'loc_contexts')
-IN_CONTEXTS = config.get('asterisk', 'out_contexts')
+IN_CONTEXTS = config.get('asterisk', 'in_contexts')
 DEFAULT_PHONE = config.get('bitrix', 'default_phone')
 LOCAL_COUNT = config.getint('asterisk', 'loc_count')
 LOGGING = config.getboolean('asterisk', 'logging')
