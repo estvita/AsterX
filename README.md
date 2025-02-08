@@ -21,7 +21,7 @@ docker run -p 6379:6379 --name redis-stack redis/redis-stack:latest
 
 ```
 cd /opt
-git clone https://github.com/vaestvita/bitrix-asterisk.git
+git clone https://github.com/estvita/bitrix-asterisk.git
 cd bitrix-asterisk
 python3 -m venv .venv
 source .venv/bin/activate
