@@ -134,7 +134,7 @@ async def ys_handler():
     return jsonify({"status": "ok"}), 200
 
     
-@app.route('/bitrix', methods=['POST'])
+@app.route('/click2call', methods=['POST'])
 async def b24_handler():
     application_token = request.form.get('auth[application_token]')
     if application_token != TOKEN_B24:
