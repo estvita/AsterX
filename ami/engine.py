@@ -103,6 +103,7 @@ async def ami_callback(mngr: Manager, message: Message):
             
             call_data['call_id'] = bitrix.register_call(call_data)
             r.json().set(linked_id, "$", call_data)
+            r.expire(linked_id, 7200)
 
     elif event == 'APP_START':
         if call_data:
