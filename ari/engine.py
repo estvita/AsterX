@@ -32,7 +32,8 @@ DEFAULT_PHONE = config.get('bitrix', 'default_phone')
 LOCAL_COUNT = config.getint('asterisk', 'loc_count')
 LOGGING = config.getboolean('asterisk', 'logging')
 SHOW_CARD = config.getint('bitrix', 'show_card')
-RECORD_URL = config.get('asterisk', 'records_url')
+RECORD_PROTOCOL = config.get('asterisk', 'records_protocol')
+RECORD_URI = config.get('asterisk', 'records_uri')
 RECORD_USER = config.get('asterisk', 'record_user')
 RECORD_PASS = config.get('asterisk', 'record_pass')
 
@@ -166,8 +167,8 @@ def on_message(ws, message):
 
             resp = bitrix.finish_call(call_data)
             if resp.status_code == 200:
-                if call_data.get('status', None) == 200 and call_data.get('file_path') and RECORD_URL:
-                    file_data = requests.get(f'{RECORD_URL}{call_data["file_path"]}', auth=(RECORD_USER, RECORD_PASS))
+                if call_data.get('status', None) == 200 and call_data.get('file_path') and RECORD_URI:
+                    file_data = requests.get(f'{RECORD_URI}{call_data["file_path"]}', auth=(RECORD_USER, RECORD_PASS))
                     if file_data.status_code == 200:
                         file_content = file_data.content
                         file_base64 = base64.b64encode(file_content).decode('utf-8')

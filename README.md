@@ -50,8 +50,10 @@ nano config.ini
 + [port] - AMI/ARI port.
 + [username] - AMI/ARI username.
 + [secret] - AMI/ARI password.
-+ [records_url] - URL for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf).
-+ [record_user] - Basic Auth login.
++ [key_filepath] - ssh key pach
++ [records_protocol] sftp or http
++ [records_uri] - URL  for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf). Or  /var/spool/asterisk/monitor/ (for sftp)
++ [record_user] - Basic Auth login or ssh user (for sftp)
 + [record_pass] - Basic Auth password.
 + [loc_count] - Number of digits for internal extensions. If set to 0, internal calls will also be sent to Bitrix.
 + [loc_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".

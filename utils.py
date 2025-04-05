@@ -6,13 +6,16 @@ from urllib.parse import urlparse
 import configparser
 from ftplib import FTP
 import fnmatch
+import paramiko
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-RECORD_URL = config.get('asterisk', 'records_url')
+HOSTNAME = config.get('asterisk', 'host')
+RECORD_URI = config.get('asterisk', 'records_uri')
 RECORD_USER = config.get('asterisk', 'record_user')
 RECORD_PASS = config.get('asterisk', 'record_pass')
+KEY = config.get('asterisk', 'key_filepath')
 
 r = redis.Redis(host='localhost', port=6379, db=1)
 
@@ -42,7 +45,7 @@ def setup_logger(linked_id):
 
 
 def ftp_download(partial_file_name: str, directory: str) -> bytes:
-    parsed_url = urlparse(RECORD_URL)
+    parsed_url = urlparse(RECORD_URI)
     ftp = FTP(parsed_url.hostname)
     ftp.login(RECORD_USER, RECORD_PASS)
 
@@ -77,8 +80,25 @@ def ftp_download(partial_file_name: str, directory: str) -> bytes:
 
 
 def http_download(file_path: str) -> bytes:
-    file_data = requests.get(f'{RECORD_URL}{file_path}', auth=(RECORD_USER, RECORD_PASS))
+    file_data = requests.get(f'{RECORD_URI}{file_path}', auth=(RECORD_USER, RECORD_PASS))
     if file_data.status_code == 200:
         return file_data.content
     else:
         return None
+    
+
+def download_file_sftp(remote_filepath):
+    transport = paramiko.Transport((HOSTNAME, 22))
+    
+    private_key = paramiko.RSAKey.from_private_key_file(KEY)
+    
+    transport.connect(username=RECORD_USER, pkey=private_key)
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    
+    with sftp.open(remote_filepath, 'rb') as file_data:
+        content = file_data.read()
+    
+    sftp.close()
+    transport.close()
+    
+    return content

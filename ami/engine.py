@@ -27,7 +27,8 @@ DEFAULT_PHONE = config.get('bitrix', 'default_phone')
 LOCAL_COUNT = config.getint('asterisk', 'loc_count')
 LOGGING = config.getboolean('asterisk', 'logging')
 SHOW_CARD = config.getint('bitrix', 'show_card')
-RECORD_URL = config.get('asterisk', 'records_url')
+RECORD_PROTOCOL = config.get('asterisk', 'records_protocol')
+RECORD_URI = config.get('asterisk', 'records_uri')
 RECORD_USER = config.get('asterisk', 'record_user')
 RECORD_PASS = config.get('asterisk', 'record_pass')
 
@@ -47,8 +48,8 @@ STATUSES = {
 
 r = redis.Redis(host='localhost', port=6379, db=1)
 
-# logging.basicConfig(level=logging.INFO, format='%(message)s', filename='log.txt')
-# logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO, format='%(message)s', filename='log.txt')
+logger = logging.getLogger()
 
 
 manager = Manager.from_config(config_file)
@@ -60,6 +61,15 @@ async def ami_callback(mngr: Manager, message: Message):
     if LOGGING:
         logger = utils.setup_logger(linked_id)
         logger.info(message)
+
+
+# add voicemail to call_data
+@manager.register_event('VarSet')
+async def ami_callback(mngr: Manager, message: Message):
+    linked_id = message.Linkedid
+    variable = message.Variable
+    if variable == "VM_MESSAGEFILE":
+        r.json().set(linked_id, "$.file_path", f"{message.Value}.wav")
 
 
 @manager.register_event('CEL')
@@ -163,10 +173,18 @@ async def ami_callback(mngr: Manager, message: Message):
             call_data['duration'] = round(time.time() - call_data['start_time'])
             resp = bitrix.finish_call(call_data)
             if resp.status_code == 200:
-                if call_data.get('status', None) == 200 and call_data.get('file_path') and RECORD_URL:
-                    file_data = requests.get(f'{RECORD_URL}{call_data["file_path"]}', auth=(RECORD_USER, RECORD_PASS))
-                    if file_data.status_code == 200:
-                        file_content = file_data.content
+                if call_data.get('file_path') and RECORD_URI:
+                    file_path = call_data.get('file_path')
+                    if call_data.get('status') == 200:
+                        file_path = f'{RECORD_URI}{file_path}'
+                    if RECORD_PROTOCOL == "sftp":
+                        file_content = utils.download_file_sftp(file_path)
+                    else:
+                        file_data = requests.get(file_path, auth=(RECORD_USER, RECORD_PASS))
+                        if file_data.status_code == 200:
+                            file_content = file_data.content
+
+                    if file_content:
                         file_base64 = base64.b64encode(file_content).decode('utf-8')
                         bitrix.upload_file(call_data, file_base64)
                 r.json().delete(linked_id, "$")

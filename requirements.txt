@@ -4,3 +4,4 @@ requests
 websocket-client
 flask[async]
 gunicorn
+paramiko
