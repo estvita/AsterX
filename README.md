@@ -15,9 +15,6 @@ This script allows sending call history and recording files from Asterisk (FreeP
 
 [RedisJSON](https://github.com/RedisJSON/RedisJSON) is used for temporary storage of call information.
 
-```
-docker run -p 6379:6379 --name redis-stack redis/redis-stack:latest
-```
 
 ```
 cd /opt
@@ -52,7 +49,7 @@ nano config.ini
 + [secret] - AMI/ARI password.
 + [key_filepath] - ssh key pach
 + [records_protocol] sftp, http or local
-+ [records_uri] - URL  for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf). Or  /var/spool/asterisk/monitor/ (for sftp)
++ [records_uri] - URL  for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf). Or path like /var/spool/asterisk/monitor/ (for sftp and local)
 + [record_user] - Basic Auth login or ssh user (for sftp)
 + [record_pass] - Basic Auth password.
 + [loc_count] - Number of digits for internal extensions. If set to 0, internal calls will also be sent to Bitrix.

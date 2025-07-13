@@ -11,9 +11,7 @@
 ### Установка 
 
 Для временного хранения информации о звонках используется [RedisJSON](https://github.com/RedisJSON/RedisJSON) 
-```
-docker run -p 6379:6379 --name redis-stack redis/redis-stack:latest
-```
+
 
 ```
 cd /opt
@@ -47,7 +45,7 @@ nano config.ini
 + [username] - AMI/ARI пользователь
 + [secret] - AMI/ARI пароль
 + [records_protocol] sftp, http или local
-+ [records_uri] - url с записями звонков с HTTP Basic Auth (https://example.com/monitor/). Пример конфига [Apache](examples/monitor.conf)
++ [records_uri] - url с записями звонков с HTTP Basic Auth (https://example.com/monitor/). Пример конфига [Apache](examples/monitor.conf)  Или путь к папке /var/spool/asterisk/monitor/ (для sftp или local)
 + [record_user] - логин Basic Auth
 + [record_pass] - пароль Basic Auth
 + [loc_count] - количество знаков внутренних номеров. Если поставить 0, то внутренние звонки тоже будет передаваться в битрикс
@@ -60,8 +58,7 @@ nano config.ini
 cd /opt/bitrix-asterisk
 source .venv/bin/activate
 
-+ ARI: python ari/engine.py
-+ AMI: python ami/engine.py
++ ARI/AMI: python main.py
 + Click2call: gunicorn --bind 0.0.0.0:8000 wsgi:app
 + Yeastar API: python yeastar/app.py
 
