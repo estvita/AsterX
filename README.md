@@ -51,7 +51,7 @@ nano config.ini
 + [username] - AMI/ARI username.
 + [secret] - AMI/ARI password.
 + [key_filepath] - ssh key pach
-+ [records_protocol] sftp or http
++ [records_protocol] sftp, http or local
 + [records_uri] - URL  for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf). Or  /var/spool/asterisk/monitor/ (for sftp)
 + [record_user] - Basic Auth login or ssh user (for sftp)
 + [record_pass] - Basic Auth password.

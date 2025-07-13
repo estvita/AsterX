@@ -179,6 +179,8 @@ async def ami_callback(mngr: Manager, message: Message):
                         file_path = f'{RECORD_URI}{file_path}'
                     if RECORD_PROTOCOL == "sftp":
                         file_content = utils.download_file_sftp(file_path)
+                    elif RECORD_PROTOCOL == "local":
+                        file_content = utils.download_file_local(file_path)
                     else:
                         file_data = requests.get(file_path, auth=(RECORD_USER, RECORD_PASS))
                         if file_data.status_code == 200:

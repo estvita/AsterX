@@ -106,3 +106,13 @@ def download_file_sftp(remote_filepath):
         transport.close()
     
     return content
+
+
+def download_file_local(filepath):
+    try:
+        with open(filepath, 'rb') as f:
+            content = f.read()
+    except FileNotFoundError:
+        print(f"File not found: {filepath}")
+        content = None
+    return content

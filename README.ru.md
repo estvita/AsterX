@@ -46,6 +46,7 @@ nano config.ini
 + [port] - AMI/ARI порт
 + [username] - AMI/ARI пользователь
 + [secret] - AMI/ARI пароль
++ [records_protocol] sftp, http или local
 + [records_uri] - url с записями звонков с HTTP Basic Auth (https://example.com/monitor/). Пример конфига [Apache](examples/monitor.conf)
 + [record_user] - логин Basic Auth
 + [record_pass] - пароль Basic Auth
