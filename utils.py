@@ -89,16 +89,20 @@ def http_download(file_path: str) -> bytes:
 
 def download_file_sftp(remote_filepath):
     transport = paramiko.Transport((HOSTNAME, 22))
-    
     private_key = paramiko.RSAKey.from_private_key_file(KEY)
-    
     transport.connect(username=RECORD_USER, pkey=private_key)
     sftp = paramiko.SFTPClient.from_transport(transport)
     
-    with sftp.open(remote_filepath, 'rb') as file_data:
-        content = file_data.read()
-    
-    sftp.close()
-    transport.close()
+    try:
+        sftp.stat(remote_filepath)
+        
+        with sftp.open(remote_filepath, 'rb') as file_data:
+            content = file_data.read()
+    except FileNotFoundError:
+        print(f"File not found: {remote_filepath}")
+        content = None
+    finally:
+        sftp.close()
+        transport.close()
     
     return content

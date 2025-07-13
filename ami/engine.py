@@ -172,10 +172,11 @@ async def ami_callback(mngr: Manager, message: Message):
             call_data = call_data[0]
             call_data['duration'] = round(time.time() - call_data['start_time'])
             resp = bitrix.finish_call(call_data)
-            if resp.status_code == 200 and call_data.get('status') == 200:
+            if resp.status_code == 200:
                 if call_data.get('file_path') and RECORD_URI:
                     file_path = call_data.get('file_path')
-                    file_path = f'{RECORD_URI}{file_path}'
+                    if call_data.get('status') == 200:
+                        file_path = f'{RECORD_URI}{file_path}'
                     if RECORD_PROTOCOL == "sftp":
                         file_content = utils.download_file_sftp(file_path)
                     else:
@@ -186,7 +187,7 @@ async def ami_callback(mngr: Manager, message: Message):
                     if file_content:
                         file_base64 = base64.b64encode(file_content).decode('utf-8')
                         bitrix.upload_file(call_data, file_base64)
-            r.json().delete(linked_id, "$")
+                r.json().delete(linked_id, "$")
 
 
 def run():
