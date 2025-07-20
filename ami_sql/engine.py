@@ -16,7 +16,6 @@ import config
 
 config_file = config.config_file
 LOGGING = config.LOGGING
-REDIS_DB = config.REDIS_DB
 EXTERNAL_CONTEXTS = config.EXTERNAL_CONTEXTS
 INTERNAL_CONTEXTS = config.INTERNAL_CONTEXTS
 SHOW_CARD = int(config.SHOW_CARD)
