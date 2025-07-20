@@ -10,7 +10,7 @@
 
 ### Установка 
 
-Для временного хранения информации о звонках используется [RedisJSON](https://github.com/RedisJSON/RedisJSON) 
+Для временного хранения информации о звонках используется [Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) 
 
 
 ```
@@ -29,28 +29,28 @@ nano config.ini
 [app]
 + [debug] - Режим отладки (True/False)
 + [port] - Порт запуска приложения 8000
-+ [engine] - ami, ari для запуска приложения
++ [engine] - ami_reis (по умолчанию), ami_sql или ari для подключения к Asterisk
 
 [bitrix]
 + [url] - Адрес воходящего вебхука.
 + [token] - Выдаётся Битриксом при создании исходящего вебхука
 + [crm_create] - Создавать или нет сущность CRM (1/0)
-+ [show_card] - Показывать или нет карточку клиента (1/0)
-+ [default_phone] - Внутренний номер по умолчанию (должен быть указан в настройках Битрикс телефония - пользователи телефонии). Обязательный параметр. Все входящие сначала регистрируются на пользователя с этим номером.
++ [show_card] - 0 (не показывать карточку), 1 (во время вызова), 2 (при поднятии трубки)
++ [default_user_id] - Потерянные входящие звонки регистрируются на этого пользователя (по умолчанию 1).
 
 [asterisk]
 + [ws_type] - wss/ws - требуестя при подключении к ARI
-+ [host] - адрес ATC (example.com)
++ [host] - адрес ATC (localhost - по умолчанию)
 + [port] - AMI/ARI порт
 + [username] - AMI/ARI пользователь
 + [secret] - AMI/ARI пароль
 + [records_protocol] sftp, http или local
-+ [records_uri] - url с записями звонков с HTTP Basic Auth (https://example.com/monitor/). Пример конфига [Apache](examples/monitor.conf)  Или путь к папке /var/spool/asterisk/monitor/ (для sftp или local)
++ [key_filepath] - ssh ключ для sftp
++ [records_uri] - url с записями звонков с HTTP Basic Auth (https://example.com/monitor/). Пример конфига [Apache](examples/monitor.conf)  
 + [record_user] - логин Basic Auth
 + [record_pass] - пароль Basic Auth
-+ [loc_count] - количество знаков внутренних номеров. Если поставить 0, то внутренние звонки тоже будет передаваться в битрикс
-+ [loc_contexts] - список контекстов внутренних (исходящие) вызовов. По умолчанию "from-internal"
-+ [in_contexts] - список контекстов для входящих вызовов. По умолчанию "from-pstn"
++ [internal_contexts] - список контекстов внутренних (исходящие) вызовов. По умолчанию "from-internal"
++ [external_contexts] - список контекстов для входящих вызовов. По умолчанию "from-pstn"
 + [logging] - True/False - включить/отключить запись получаемых событий в файл.
 
 ## Запуск интеграции
@@ -59,7 +59,7 @@ cd /opt/bitrix-asterisk
 source .venv/bin/activate
 
 + ARI/AMI: python main.py
-+ Click2call: gunicorn --bind 0.0.0.0:8000 wsgi:app
++ Click2call сервер: gunicorn --bind 0.0.0.0:8000 wsgi:app
 + Yeastar API: python yeastar/app.py
 
 ```

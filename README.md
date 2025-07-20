@@ -13,7 +13,7 @@ This script allows sending call history and recording files from Asterisk (FreeP
 
 ### Installation
 
-[RedisJSON](https://github.com/RedisJSON/RedisJSON) is used for temporary storage of call information.
+[Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) is used for temporary storage of call information.
 
 
 ```
@@ -32,29 +32,28 @@ nano config.ini
 [app]
 + [debug] - Debug mode (True/False)
 + [port] - Flask app port: 8000
-+ [engine] - ami, ari to launch the application
++ [engine] - ami_redis (default), ami_sql or ari to connect asterisk
 
 [bitrix] parameters:
 + [url] - Address of the incoming webhook.
 + [token] - Issued by Bitrix when creating an outgoing webhook.
 + [crm_create] - Whether to create a CRM entity or not (1/0).
-+ [show_card] - Whether to display the client card or not (1/0).
-+ [default_phone] - Default internal number (must be specified in telephony settings - telephony users).
++ [show_card] -  0 - not show, 1 - on call, 2 - on answer
++ [default_user_id] - Lost incoming calls are registered to this user (default 1).
 
 [asterisk] parameters:
 + [ws_type] - wss/ws - required for connecting to ARI.
-+ [host] - PBX address (example.com).
++ [host] - PBX address (default "localhost").
 + [port] - AMI/ARI port.
 + [username] - AMI/ARI username.
 + [secret] - AMI/ARI password.
-+ [key_filepath] - ssh key pach
 + [records_protocol] sftp, http or local
-+ [records_uri] - URL  for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf](examples/monitor.conf). Or path like /var/spool/asterisk/monitor/ (for sftp and local)
++ [key_filepath] - ssh key pach for sftp
++ [records_uri] - URL for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf]
 + [record_user] - Basic Auth login or ssh user (for sftp)
 + [record_pass] - Basic Auth password.
-+ [loc_count] - Number of digits for internal extensions. If set to 0, internal calls will also be sent to Bitrix.
-+ [loc_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".
-+ [in_contexts] - List of inbound call contexts. Default: "from-pstn".
++ [internal_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".
++ [external_contexts] - List of inbound call contexts. Default: "from-pstn".
 + [logging] - True/False - Enable/disable logging of received events to a file.
 
 ## Running the Integration
@@ -64,7 +63,7 @@ cd /opt/bitrix-asterisk
 source .venv/bin/activate
 
 + ARI/AMI: python main.py
-+ Click2call: gunicorn --bind 0.0.0.0:8000 wsgi:app
++ Click2call service: gunicorn --bind 0.0.0.0:8000 wsgi:app
 + Yeastar API: python yeastar/app.py
 
 ```

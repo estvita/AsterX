@@ -1,7 +1,6 @@
 panoramisk
 redis
 requests
-websocket-client
 flask[async]
 gunicorn
 paramiko

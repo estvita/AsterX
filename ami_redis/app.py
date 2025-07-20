@@ -5,12 +5,12 @@ import configparser
 import asyncio
 import threading
 
-from ami import engine
-from ami import originate
+import ami_redis.engine as engine
+import originate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from bitrix import *
-from project_data import project_data
+import project
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def project_info():
-    return jsonify(project_data)  
+    return jsonify(project.data)  
     
 @app.route('/click2call', methods=['POST'])
 async def b24_handler():

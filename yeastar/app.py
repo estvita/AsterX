@@ -13,7 +13,7 @@ import requests
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from bitrix import *
-from project_data import project_data
+from project import project_data
 
 from get_token import send_heartbeat
 
