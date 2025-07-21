@@ -1,0 +1,2 @@
+panoramisk
+requests

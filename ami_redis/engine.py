@@ -37,6 +37,11 @@ manager = Manager.from_config(config_file)
 @manager.register_event('*')
 async def ami_callback(mngr: Manager, message: Message):
     event = message.Event
+    if LOGGING and event not in [
+        'TestEvent', 'DeviceStateChange', 'VarSet', 'RTCPReceived',
+        'RTCPSent'
+        ]:
+        logger.info(f"{event}: {message}")
     linked_id = message.Linkedid
     context = message.Context
     uniqueid = message.Uniqueid
@@ -69,7 +74,7 @@ async def ami_callback(mngr: Manager, message: Message):
                 # ignore local calls
                 if context in INTERNAL_CONTEXTS and call_data['context'] in INTERNAL_CONTEXTS:
                     print("local call")
-                    r.json().delete(linked_id, "$")
+                    # r.json().delete(linked_id, "$")
                     return
                 call_id = bitrix.register_call(call_data)
                 r.json().set(linked_id, "$.call_id", call_id)
@@ -86,7 +91,7 @@ async def ami_callback(mngr: Manager, message: Message):
 
     elif event == "DialEnd":
         call_data = call_data[0]
-        if message.DialStatus == "ANSWER":
+        if message.DialStatus == "ANSWER" and context in EXTERNAL_CONTEXTS:
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
             r.json().set(linked_id, "$.internal", internal_phone)
             if SHOW_CARD == 2:
@@ -101,7 +106,7 @@ async def ami_callback(mngr: Manager, message: Message):
         if call_data.get('uniqueid') == uniqueid:
             call_data['duration'] = round(time.time() - call_data['start_time'])
             bitrix.finish_call(call_data)
-            r.json().delete(linked_id, "$")
+            # r.json().delete(linked_id, "$")
 
 
 def on_connect(mngr: Manager):

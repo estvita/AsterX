@@ -123,7 +123,7 @@ async def ami_callback(mngr: Manager, message: Message):
         if message.Variable == "MIXMONITOR_FILENAME":
             update_call_data(linked_id, file_path=message.Value)
     elif event == "DialEnd":
-        if message.DialStatus == "ANSWER":
+        if message.DialStatus == "ANSWER" and context in EXTERNAL_CONTEXTS:
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
             update_call_data(linked_id, internal=internal_phone)
             if SHOW_CARD == 2:
