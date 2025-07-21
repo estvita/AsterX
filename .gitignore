@@ -165,3 +165,4 @@ events/*.txt
 log.txt
 test.py
 calls.db
+system.db

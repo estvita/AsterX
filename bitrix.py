@@ -2,6 +2,7 @@ import os
 import sys
 import requests
 import logging
+import sqlite3
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config
@@ -12,12 +13,26 @@ B24_URL = config.B24_URL
 CRM_CREATE = config.CRM_CREATE
 SHOW_CARD = config.SHOW_CARD
 DEFAULT_USER_ID = config.DEFAULT_USER_ID
-
+STORE_USER_PHONE = config.STORE_USER_PHONE
+ENGINE = config.ENGINE
+REDIS_DB = config.REDIS_DB
 
 logging.basicConfig(level=logging.INFO, format='%(message)s', filename='bitrix.log')
 logger = logging.getLogger()
 
-def get_user_id(user_phone):
+def create_users_table(db_path='system.db'):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_phone TEXT PRIMARY KEY,
+            user_id TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def get_user_id_remote(user_phone):
     payload = {
         'FILTER': {
             'UF_PHONE_INNER': user_phone
@@ -35,6 +50,28 @@ def get_user_id(user_phone):
     except requests.exceptions.RequestException as e:
         logger.error(f'B24 request error: {e}')
         return None
+
+def get_user_id(user_phone, db_path='system.db'):
+    # Проверяем и создаём таблицу, если нужно
+    create_users_table(db_path)
+    conn = sqlite3.connect(db_path)
+    cur = conn.execute("SELECT user_id FROM users WHERE user_phone = ?", (user_phone,))
+    row = cur.fetchone()
+    if row and row[0]:
+        conn.close()
+        return row[0]
+
+    # Нет локально, ищем в Bitrix
+    remote_id = get_user_id_remote(user_phone)
+
+    # Сохраним в случае успеха (не дефолтного)
+    if remote_id and remote_id != DEFAULT_USER_ID:
+        conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
+                     (user_phone, remote_id))
+        conn.commit()
+    conn.close()
+    return remote_id
+
     
 
 def register_call(call_data: dict):
