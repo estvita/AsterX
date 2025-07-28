@@ -6,7 +6,7 @@ import asyncio
 import threading
 
 import ami_redis.engine as engine
-import originate
+import ami_redis.originate as originate
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from bitrix import *

@@ -164,5 +164,4 @@ cython_debug/
 events/*.txt
 log.txt
 test.py
-calls.db
-system.db
+*.db

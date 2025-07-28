@@ -1,7 +1,7 @@
 data = {
     'App': {
         'Name': 'AMI/ARI integration of Asterisk-based PBX with Bitrix24 CRM',
-        'URL': 'https://github.com/estvita/bitrix-asterisk'
+        'URL': 'https://github.com/estvita/AsterX'
     },
     'Developer': {
         'Name': 'Anton Gulin',

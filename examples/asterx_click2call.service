@@ -1,0 +1,15 @@
+# /etc/systemd/system
+
+[Unit]
+Description=B24 asterx click2call
+After=network.target
+
+[Service]
+User=nobody
+Group=nobody
+WorkingDirectory=/opt/asterx
+Environment="PATH=/opt/asterx/.venv/bin"
+ExecStart=/opt/asterx/.venv/bin/gunicorn --bind 0.0.0.0:8000 wsgi:app
+
+[Install]
+WantedBy=multi-user.target

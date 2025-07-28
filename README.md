@@ -1,8 +1,10 @@
-# Sync calls with Bitrix24 via ARI, AMI or API (Yeastar)
+# AsterX: Sync calls with Bitrix24 via ARI, AMI or API (Yeastar)
+
+https://github.com/estvita/AsterX
 
 [Инструкция на русском](README.ru.md)
 
-Tested with Asterisk v. 16, 18, 20 (FreePBX) and [Yeastar](/yeastar/) S50 - if the context names used in the filters differ from those in your system, replace them accordingly.
+Tested with Asterisk v. 16, 18, 20 (FreePBX) and [Yeastar](/yeastar/) S50 
 
 This script allows sending call history and recording files from Asterisk (FreePBX) to Bitrix24.
 
@@ -13,13 +15,16 @@ This script allows sending call history and recording files from Asterisk (FreeP
 
 ### Installation
 
-[Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) is used for temporary storage of call information.
++ [Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) 
++ or SQLite 
+
+is used for temporary storage of call information.
 
 
 ```
 cd /opt
-git clone https://github.com/estvita/bitrix-asterisk.git
-cd bitrix-asterisk
+git clone https://github.com/estvita/asterx.git
+cd asterx
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -33,6 +38,7 @@ nano config.ini
 + [debug] - Debug mode (True/False)
 + [port] - Flask app port: 8000
 + [engine] - ami_redis (default), ami_sql or ari to connect asterisk
++ [logging] - True/False - Enable/disable logging of received events to a file.
 
 [bitrix] parameters:
 + [url] - Address of the incoming webhook.
@@ -54,7 +60,6 @@ nano config.ini
 + [record_pass] - Basic Auth password.
 + [internal_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".
 + [external_contexts] - List of inbound call contexts. Default: "from-pstn".
-+ [logging] - True/False - Enable/disable logging of received events to a file.
 
 ## Running the Integration
 
@@ -70,10 +75,10 @@ source .venv/bin/activate
 
 
 ## Automatic Startup
-Example [systemd](/examples/b24_integration.service) configuration for automatic startup:
+Example [systemd](/examples/asterx.service) configuration for automatic startup:
 
 ```
-cp /opt/bitrix-asterisk/examples/b24_integration.service /etc/systemd/system/b24_integration.service
-systemctl enable b24_integration.service
-systemctl start b24_integration.service
+cp /opt/bitrix-asterisk/examples/asterx.service /etc/systemd/system/asterx.service
+systemctl enable asterx.service
+systemctl start asterx.service
 ```

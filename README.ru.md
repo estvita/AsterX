@@ -1,6 +1,8 @@
-# Синхронизация звонков с Битрикс24 через ARI, AMI или API (Yeastar)
+# AsterX Синхронизация звонков с Битрикс24 через ARI, AMI или API (Yeastar)
 
-Протестировано с Asterisk v. 16, 18, 20 (FreePBX), [Yeastar](/yeastar/) S50,  - если названия используемых в фильтрах контекстов, отличаются от используемых в вашей системе - замените их.
+https://github.com/estvita/AsterX
+
+Протестировано с Asterisk v. 16, 18, 20 (FreePBX), [Yeastar](/yeastar/) S50
 
 Скрипт позволяет отправлять историю звонков и файлы записей из Asterisk (FreePBX) в Битрикс24
 
@@ -10,13 +12,15 @@
 
 ### Установка 
 
-Для временного хранения информации о звонках используется [Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) 
+Для временного хранения информации о звонках используется:
++ [Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) 
++ или SQLite
 
 
 ```
 cd /opt
-git clone https://github.com/estvita/bitrix-asterisk.git
-cd bitrix-asterisk
+git clone https://github.com/estvita/asterx.git
+cd asterx
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -30,6 +34,7 @@ nano config.ini
 + [debug] - Режим отладки (True/False)
 + [port] - Порт запуска приложения 8000
 + [engine] - ami_reis (по умолчанию), ami_sql или ari для подключения к Asterisk
++ [logging] - True/False - включить/отключить запись получаемых событий в файл.
 
 [bitrix]
 + [url] - Адрес воходящего вебхука.
@@ -51,11 +56,10 @@ nano config.ini
 + [record_pass] - пароль Basic Auth
 + [internal_contexts] - список контекстов внутренних (исходящие) вызовов. По умолчанию "from-internal"
 + [external_contexts] - список контекстов для входящих вызовов. По умолчанию "from-pstn"
-+ [logging] - True/False - включить/отключить запись получаемых событий в файл.
 
 ## Запуск интеграции
 ```
-cd /opt/bitrix-asterisk
+cd /opt/asterx
 source .venv/bin/activate
 
 + ARI/AMI: python main.py
@@ -65,10 +69,10 @@ source .venv/bin/activate
 ```
 
 ## Автоматический запуск 
-Пример конфигурации [systemd](/examples/b24_integration.service) для автоматического запуска
+Пример конфигурации [systemd](/examples/asterx.service) для автоматического запуска
 
 ```
-cp /opt/bitrix-asterisk/examples/b24_integration.service /etc/systemd/system/b24_integration.service
-systemctl enable b24_integration.service
-systemctl start b24_integration.service
+cp /opt/asterx/examples/asterx.service /etc/systemd/system/asterx.service
+systemctl enable asterx.service
+systemctl start asterx.service
 ```
