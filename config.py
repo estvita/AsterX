@@ -11,7 +11,7 @@ APP_MODE = config.get('app', 'mode', fallback="cloud")
 REDIS_DB = config.get('app', 'redis_db', fallback=1)
 APP_DB = config.get('app', 'app_db', fallback="app.db")
 LOGGING = config.getboolean('app', 'logging', fallback=0)
-CONTROL_SERVER_WS = config.get('app', 'control_server_ws', fallback="wss://gulin.kz:8000")
+CONTROL_SERVER_WS = config.get('app', 'control_server_ws', fallback="wss://gulin.kz")
 CONTROL_SERVER_HTTP = config.get('app', 'control_server_http', fallback="https://gulin.kz")
 
 B24_URL = config.get('bitrix', 'url', fallback=0)
