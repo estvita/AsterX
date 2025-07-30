@@ -35,7 +35,7 @@ manager = Manager.from_config(config_file)
 @manager.register_event('*')
 async def ami_callback(mngr: Manager, message: Message):
     event = message.Event
-    if LOGGING and event not in [
+    if LOGGING in [2,3] and event not in [
         'TestEvent', 'DeviceStateChange', 'VarSet', 'RTCPReceived',
         'RTCPSent'
         ]:

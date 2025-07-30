@@ -85,7 +85,7 @@ def call_bitrix(method, payload=None, retried=False):
         except Exception:
             logger.error(f'B24 request error: {e}')
         return None
-    if LOGGING:
+    if LOGGING in [1,3]:
         logger.info(f"{resp.status_code} {method} {resp.json()}")
     return resp
 
@@ -105,7 +105,6 @@ def get_user_id_remote(user_phone):
     return get_param('default_user_id', default='1')
 
 def get_user_id(user_phone):
-    # Проверяем и создаём таблицу, если нужно
     conn = sqlite3.connect(APP_DB)
     cur = conn.execute("SELECT user_id FROM users WHERE user_phone = ?", (user_phone,))
     row = cur.fetchone()
@@ -138,7 +137,7 @@ def register_call(call_data: dict):
         'USER_ID': user_id,
         'PHONE_NUMBER': call_data['external'],
         'CRM_CREATE': int(get_param('crm_create', default=0)),
-        'SHOW': 1 if int(get_param('show_card', default=1)) in [1, 2] else 0,
+        'SHOW': 1 if int(get_param('show_card', default=0)) == 1 else 0,
         'TYPE': call_data['type'],
     }
     resp = call_bitrix('telephony.externalcall.register', payload)

@@ -38,7 +38,7 @@ nano config.ini
 + [debug] - Debug mode (True/False)
 + [port] - Flask app port: 8000
 + [engine] - ami_redis (default), ami_sql or ari to connect asterisk
-+ [logging] - True/False - Enable/disable logging of received events to a file.
++ [logging] - 0 - disable, 1 - bitrix, 2 - AMI, 3 - full (1+2)
 
 [bitrix] parameters:
 + [url] - Address of the incoming webhook.

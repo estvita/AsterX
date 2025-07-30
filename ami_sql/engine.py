@@ -65,7 +65,7 @@ async def ami_callback(mngr: Manager, message: Message):
         print("APP DISABLED", )
         return
     event = message.Event
-    if LOGGING and event not in [
+    if LOGGING in [2,3] and event not in [
         'TestEvent',
         'PeerStatus',
         'Registry'
