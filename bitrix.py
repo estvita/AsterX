@@ -124,14 +124,15 @@ def get_user_id(user_phone):
     return remote_id
     
 
-def register_call(call_data: dict):
-    internal = call_data.get('internal')
-    if not internal:
-        user_id = get_param('default_user_id', default='1')
-    else:
-        user_id = get_user_id(internal)
+def register_call(call_data: dict, user_id=None):
     if not user_id:
-        return None
+        internal = call_data.get('internal')
+        if not internal:
+            user_id = get_param('default_user_id', default='1')
+        else:
+            user_id = get_user_id(internal)
+        if not user_id:
+            return None
 
     payload = {
         'USER_ID': user_id,

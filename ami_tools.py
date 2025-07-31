@@ -105,7 +105,7 @@ def save_call_data(data):
     conn.close()
 
 
-async def originate(internal, context, external, call_id):
+async def originate(internal, context, external, call_id=None):
     callmanager = CallManager.from_config(config_file)
     await callmanager.connect()
     call = await callmanager.send_originate(
@@ -122,7 +122,7 @@ async def originate(internal, context, external, call_id):
         event = call.queue.get_nowait()
         linkedid = event.Linkedid
         uniqueid = event.Uniqueid
-        if event.Event == 'Newchannel' and not data_saved:
+        if call_id and event.Event == 'Newchannel' and not data_saved:
             save_call_data((
                 linkedid,
                 time.time(),

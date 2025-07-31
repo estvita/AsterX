@@ -59,6 +59,25 @@ async def listen(core_info=None):
                             external = data.get('phone_number')
                             call_id = data.get('call_id')
                             asyncio.create_task(ami_tools.originate(internal, context, external, call_id))
+                    elif event == 'ONEXTERNALCALLBACKSTART':
+                        try:
+                            external = data.get('phone_number')
+                            resp = bitrix.call_bitrix('telephony.externalCall.searchCrmEntities', {'PHONE_NUMBER': external})
+                            if resp:
+                                result = resp.json().get('result', [])
+                                assigned_by = result[0].get('ASSIGNED_BY', {})
+                                user_id = assigned_by.get('ID')
+                                endpoint = bitrix.get_user_phone(user_id=user_id)
+                                if endpoint:
+                                    internal, context = endpoint
+                                    payload = {
+                                        'external': external,
+                                        'type': 1
+                                    }
+                                    call_id = bitrix.register_call(payload, user_id)
+                                    asyncio.create_task(ami_tools.originate(internal, context, external, call_id))
+                        except Exception as e:
+                            print(event, f"Error: {e}")
         except websockets.ConnectionClosed:
             print("Connection closed. Reconnecting in 10 sec....")
             await asyncio.sleep(10)
