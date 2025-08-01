@@ -125,21 +125,24 @@ def get_user_id(user_phone):
     
 
 def register_call(call_data: dict, user_id=None):
+    external = call_data.get('external')
+    if not external:
+        return None
     if not user_id:
         internal = call_data.get('internal')
         if not internal:
             user_id = get_param('default_user_id', default='1')
         else:
             user_id = get_user_id(internal)
-        if not user_id:
-            return None
+    if not user_id:
+        return None    
 
     payload = {
         'USER_ID': user_id,
-        'PHONE_NUMBER': call_data['external'],
+        'PHONE_NUMBER': external,
         'CRM_CREATE': int(get_param('crm_create', default=0)),
         'SHOW': 1 if int(get_param('show_card', default=0)) == 1 else 0,
-        'TYPE': call_data['type'],
+        'TYPE': call_data.get('type', 1),
     }
     resp = call_bitrix('telephony.externalcall.register', payload)
     reg_data = resp.json()
