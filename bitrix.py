@@ -22,14 +22,12 @@ logger = logging.getLogger()
 def refresh_token():
     member_id = get_param('member_id')
     user_token = get_param('user_token')
-    access_token = get_param('access_token')
     if not member_id or not user_token or not access_token:
         return False
 
     payload = {
         'server_id': config.PBX_ID,
         'member_id': member_id,
-        'access_token': access_token,
     }
     server_url = f"{config.CONTROL_SERVER_HTTP}/api/asterx/refresh_token/"
 

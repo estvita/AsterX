@@ -128,7 +128,7 @@ async def ami_callback(mngr: Manager, message: Message):
         if call_data.get('uniqueid') == uniqueid:
             call_data['duration'] = round(time.time() - call_data['start_time'])
             resp = bitrix.finish_call(call_data)
-            if resp.status_code == 200:
+            if resp and resp.status_code == 200:
                 delete_call_data(linked_id)
 
 def on_connect(mngr: Manager):
