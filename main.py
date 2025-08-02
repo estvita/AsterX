@@ -38,6 +38,7 @@ def async_core_info(core_info_container):
 
 
 def main():
+    config.prepare_db()
     engine_name = config.ENGINE
     app_mode = config.APP_MODE
     module_path = f"{engine_name}.engine"

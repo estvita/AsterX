@@ -173,6 +173,7 @@ def finish_call(call_data: dict, user_id=None):
     call_id  = call_data.get('call_id')
     if not call_id:
         call_id = register_call(call_data)
+        call_data.update({"call_id": call_id})
     if not user_id or not call_id:
         return None
     call_status = call_data.get('status', 403)
@@ -185,7 +186,7 @@ def finish_call(call_data: dict, user_id=None):
     }
     resp = call_bitrix('telephony.externalcall.finish', payload)
     resp.raise_for_status()
-    if call_status == 200:
+    if call_status in [200, 'vm']:
         file_base64 = utils.get_file(call_data)
         if file_base64:
             upload_file(call_data, file_base64)

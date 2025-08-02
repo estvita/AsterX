@@ -23,7 +23,7 @@ async def listen(core_info=None):
                 while True:
                     msg = await websocket.recv()
                     data = json.loads(msg)
-                    # print(data)
+                    print(data)
                     event = data.get('event')
                     if event == 'setup_complete':
                         config.save_param("enabled", 1)
@@ -34,10 +34,12 @@ async def listen(core_info=None):
                         config.save_param("user_token", data.get('user_token', ''))
                         config.save_param("show_card", data.get('show_card', ''))
                         config.save_param("crm_create", data.get('crm_create', ''))
+                        config.save_param("vm_send", data.get('vm_send', ''))
                         bitrix.get_user_phone()
                     elif event == 'settings_update':
                         config.save_param("show_card", data.get('show_card', ''))
                         config.save_param("crm_create", data.get('crm_create', ''))
+                        config.save_param("vm_send", data.get('vm_send', ''))
                     elif event == 'refresh_users':
                         config.clear_table('users')                        
                         bitrix.get_user_phone()

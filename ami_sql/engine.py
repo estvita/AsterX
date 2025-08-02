@@ -61,17 +61,19 @@ manager = Manager.from_config(config_file)
 
 @manager.register_event('*')
 async def ami_callback(mngr: Manager, message: Message):
-    if int(get_param('enabled')) != 1:
-        print("APP DISABLED", )
-        return
     event = message.Event
     if LOGGING in [2,3] and event not in [
         'TestEvent',
         'PeerStatus',
-        'Registry'
+        'Registry',
+        'RTCPReceived',
+        'RTCPSent'
     ]:
         logger.info(f"{event} {message}")
 
+    if int(get_param('enabled')) != 1:
+        print("APP DISABLED", )
+        return
     linked_id = message.Linkedid
     context = message.Context
     uniqueid = message.Uniqueid
@@ -114,6 +116,9 @@ async def ami_callback(mngr: Manager, message: Message):
     elif event == "VarSet":
         if message.Variable == "MIXMONITOR_FILENAME":
             update_call_data(linked_id, file_path=message.Value)
+        elif message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default=1) == "1":
+            update_call_data(linked_id, file_path=f"{message.Value}.wav")
+            update_call_data(linked_id, status='vm')
     elif event == "DialEnd":
         if message.DialStatus == "ANSWER" and config.get_context_type(context) == 'external':
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
