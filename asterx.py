@@ -74,7 +74,7 @@ async def listen(core_info=None):
                                     internal, context = endpoint
                                     payload = {
                                         'external': external,
-                                        'type': 1
+                                        'type': 4
                                     }
                                     call_id = bitrix.register_call(payload, user_id)
                                     asyncio.create_task(ami_tools.originate(internal, context, external, call_id))
