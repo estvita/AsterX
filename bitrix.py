@@ -204,8 +204,8 @@ def get_user_phone(user_id=None):
         resp = call_bitrix('user.get', payload)
         resp.raise_for_status()
         user_data = resp.json().get('result', [])
-        if user_data and user_data[0].get('UF_PHONE_INNER'):
-            user_phone = user_data[0].get('UF_PHONE_INNER')
+        user_phone = user_data[0].get('UF_PHONE_INNER')
+        if user_data and user_phone:
             # Возможно, контекста нет при первом добавлении
             conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
                          (user_phone, user_id))
@@ -225,7 +225,7 @@ def get_user_phone(user_id=None):
     users = resp.json().get('result', [])
     for u in users:
         user_id = u.get('ID')
-        user_phone = u.get('UF_PHONE_INNER')
+        user_phone = u.get('UF_PHONE_INNER', '')
         if user_id and user_phone:
             cur = conn.execute("UPDATE users SET user_id=? WHERE user_phone=?", (user_id, user_phone))
             if cur.rowcount == 0:

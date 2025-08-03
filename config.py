@@ -11,7 +11,6 @@ APP_MODE = config.get('app', 'mode', fallback="cloud")
 REDIS_DB = config.get('app', 'redis_db', fallback=1)
 APP_DB = config.get('app', 'app_db', fallback="app.db")
 LOGGING = int(config.get('app', 'logging', fallback=0))
-VM_SEND = config.get('app', 'vm_send', fallback="1")
 CONTROL_SERVER_WS = config.get('app', 'control_server_ws', fallback="wss://gulin.kz")
 CONTROL_SERVER_HTTP = config.get('app', 'control_server_http', fallback="https://gulin.kz")
 
@@ -125,12 +124,20 @@ def get_param(key, section='app', default=None):
         
 
 def get_context_type(context):
-    conn = sqlite3.connect(APP_DB)
-    cur = conn.execute("SELECT type FROM context WHERE context=?", (context,))
-    row = cur.fetchone()
-    conn.close()
-    if row:
-        return row[0]
+    if APP_MODE == 'local':
+        if context in EXTERNAL_CONTEXTS:
+            return "external"
+        elif context in INTERNAL_CONTEXTS:
+            return "internal"
+        else:
+            return None
+    elif APP_MODE == 'cloud':
+        conn = sqlite3.connect(APP_DB)
+        cur = conn.execute("SELECT type FROM context WHERE context=?", (context,))
+        row = cur.fetchone()
+        conn.close()
+        if row:
+            return row[0]
     return None
         
 

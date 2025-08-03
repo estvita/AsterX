@@ -1,9 +1,9 @@
-import sqlite3
-import time
-import sys
 import os
-import logging
+import sys
 import time
+import logging
+import sqlite3
+import asyncio
 
 from panoramisk import Manager, Message
 
@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(message)s', filename='ami_poor
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import bitrix
 import config
+import ami_tools
 from config import get_param
 
 config_file = config.config_file
@@ -71,7 +72,7 @@ async def ami_callback(mngr: Manager, message: Message):
     ]:
         logger.info(f"{event} {message}")
 
-    if int(get_param('enabled')) != 1:
+    if get_param('enabled', default="1") == "0":
         print("APP DISABLED", )
         return
     linked_id = message.Linkedid
@@ -90,6 +91,29 @@ async def ami_callback(mngr: Manager, message: Message):
             }
             if config.get_context_type(context) == 'external':
                 insert_data.update({"type": 2, "external": caller})
+                if config.get_param('smart_route', default="0") == "1":
+                    try:
+                        resp = bitrix.call_bitrix('telephony.externalCall.searchCrmEntities', {'PHONE_NUMBER': caller})
+                        if resp:
+                            result = resp.json().get('result', [])
+                            assigned_by = result[0].get('ASSIGNED_BY', {})
+                            user_id = assigned_by.get('ID')
+                            endpoint = bitrix.get_user_phone(user_id=user_id)
+                            if endpoint:
+                                internal, context = endpoint
+                                insert_data.update({"internal": internal})
+                                payload = {
+                                    "Action": "Redirect",
+                                    "Channel": message.Channel,
+                                    "Context": context,
+                                    "Exten": internal,
+                                    "Priority": 1
+                                }
+                                asyncio.create_task(ami_tools.run_action(payload))
+                    except Exception as e:
+                        print(f"Smart routing failed: {e}")
+                        logger.info(f"Smart routing failed: {e}")
+
             elif config.get_context_type(context) == 'internal':
                 insert_data.update({"type": 1, "external": exten, "internal": caller})
             update_call_data(linked_id, **insert_data)
@@ -108,7 +132,7 @@ async def ami_callback(mngr: Manager, message: Message):
                 call_id = bitrix.register_call(call_data)
                 update_call_data(linked_id, call_id=call_id)
             else:
-                if int(get_param('show_card', default=1)) == 1:
+                if int(get_param('show_card', default="1")) == "1":
                     bitrix.card_action(call_id, internal_phone, 'show')
     elif not call_data:
         return
@@ -116,14 +140,14 @@ async def ami_callback(mngr: Manager, message: Message):
     elif event == "VarSet":
         if message.Variable == "MIXMONITOR_FILENAME":
             update_call_data(linked_id, file_path=message.Value)
-        elif message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default=1) == "1":
+        elif message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default="1") == "1":
             update_call_data(linked_id, file_path=f"{message.Value}.wav")
             update_call_data(linked_id, status='vm')
     elif event == "DialEnd":
         if message.DialStatus == "ANSWER" and config.get_context_type(context) == 'external':
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
             update_call_data(linked_id, internal=internal_phone)
-            if int(get_param('show_card', default=1)) == 2:
+            if int(get_param('show_card', default="1")) == "2":
                 bitrix.card_action(call_data.get('call_id'), internal_phone, 'show')
         status = call_data.get('status')
         if status != 200:
