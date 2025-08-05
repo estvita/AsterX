@@ -7,7 +7,9 @@ config = configparser.ConfigParser()
 config.read(config_file)
 
 ENGINE = config.get('app', 'engine', fallback="ami_sql")
+APP_DEBUG = config.get('app', 'debug', fallback=0)
 APP_MODE = config.get('app', 'mode', fallback="cloud")
+APP_PORT = config.get('app', 'port', fallback=8000)
 REDIS_DB = config.get('app', 'redis_db', fallback=1)
 APP_DB = config.get('app', 'app_db', fallback="app.db")
 LOGGING = int(config.get('app', 'logging', fallback=0))
@@ -15,6 +17,7 @@ CONTROL_SERVER_WS = config.get('app', 'control_server_ws', fallback="wss://gulin
 CONTROL_SERVER_HTTP = config.get('app', 'control_server_http', fallback="https://gulin.kz")
 
 B24_URL = config.get('bitrix', 'url', fallback=0)
+TOKEN = config.get('bitrix', 'token', fallback=0)
 
 PBX_ID = config.get('asterisk', 'pbx_id', fallback=0)
 HOSTNAME = config.get('asterisk', 'host', fallback='localhost')

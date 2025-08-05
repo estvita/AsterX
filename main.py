@@ -41,18 +41,17 @@ def main():
     config.prepare_db()
     engine_name = config.ENGINE
     app_mode = config.APP_MODE
-    module_path = f"{engine_name}.engine"
     try:
-        engine_module = importlib.import_module(module_path)
+        engine_module = importlib.import_module(engine_name)
     except ImportError as e:
-        sys.exit(f"Failed to import module '{module_path}': {e}")
+        sys.exit(f"Failed to import module '{engine_name}': {e}")
 
     core_info = None
+    core_info_res = {}
+    t = threading.Thread(target=async_core_info, args=(core_info_res,))
+    t.start()
+    t.join()  # Дождаться результата
     if app_mode == 'cloud':
-        core_info_res = {}
-        t = threading.Thread(target=async_core_info, args=(core_info_res,))
-        t.start()
-        t.join()  # Дождаться результата
         core_info = core_info_res.get('core_info')
         # запуск asterx
         t2 = threading.Thread(target=asterx.run, kwargs={'core_info': core_info})

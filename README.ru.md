@@ -8,7 +8,7 @@ https://github.com/estvita/AsterX
 
 ## Настройка на стороне Битрикс24
 + Входящий вебхук с правами: crm, user, telephony. Интеграции > Rest API > Другое > Входящий вебхук
-+ Исходящий вебхук для события ONEXTERNALCALLSTART (звонок по клику). В поле "URL вашего обработчика" ввести адрес http://X.X.X.X:8000/click2call
++ Исходящий вебхук для событий ONEXTERNALCALLSTART, ONEXTERNALCALLBACKSTART. В поле "URL вашего обработчика" ввести адрес http://X.X.X.X:8000/asterx
 
 ### Установка 
 
@@ -63,7 +63,7 @@ cd /opt/asterx
 source .venv/bin/activate
 
 + ARI/AMI: python main.py
-+ Click2call сервер: gunicorn --bind 0.0.0.0:8000 wsgi:app
++ Получение событий: gunicorn --bind 0.0.0.0:8000 wsgi:app
 + Yeastar API: python yeastar/app.py
 
 ```

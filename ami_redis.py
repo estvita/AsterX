@@ -1,8 +1,8 @@
 import os
 import sys
 import time
+import redis
 import logging
-import sqlite3
 import asyncio
 
 from panoramisk import Manager, Message
@@ -14,11 +14,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import bitrix
 import config
 import ami_tools
-from config import get_param
 
 config_file = config.config_file
 LOGGING = config.LOGGING
-APP_DB = config.APP_DB
+REDIS_DB = config.REDIS_DB
+SHOW_CARD = int(config.SHOW_CARD)
 
 
 STATUSES = {
@@ -31,66 +31,34 @@ STATUSES = {
     "NOANSWER": 304
 }
 
-conn = sqlite3.connect(APP_DB)
-
-def get_call_data(linked_id):
-    cur = conn.execute('SELECT * FROM calls WHERE linked_id = ?', (linked_id,))
-    row = cur.fetchone()
-    if row:
-        cols = [desc[0] for desc in cur.description]
-        return dict(zip(cols, row))
-    return None
-
-def update_call_data(linked_id, **kwargs):
-    call_data = get_call_data(linked_id)
-    keys, vals = list(kwargs.keys()), list(kwargs.values())
-    if call_data:
-        set_clause = ', '.join(f'{k}=?' for k in keys)
-        conn.execute(f'UPDATE calls SET {set_clause} WHERE linked_id=?', (*vals, linked_id))
-    else:
-        fields = ', '.join(['linked_id'] + keys)
-        q = ', '.join(['?'] * (len(keys) + 1))
-        conn.execute(f'INSERT INTO calls ({fields}) VALUES ({q})', (linked_id, *vals))
-    conn.commit()
-
-def delete_call_data(linked_id):
-    conn.execute('DELETE FROM calls WHERE linked_id=?', (linked_id,))
-    conn.commit()
-
-
+r = redis.Redis(host='localhost', port=6379, db=REDIS_DB)
 manager = Manager.from_config(config_file)
 
 @manager.register_event('*')
 async def ami_callback(mngr: Manager, message: Message):
     event = message.Event
     if LOGGING in [2,3] and event not in [
-        'TestEvent',
-        'PeerStatus',
-        'Registry',
-        'RTCPReceived',
+        'TestEvent', 'DeviceStateChange', 'VarSet', 'RTCPReceived',
         'RTCPSent'
-    ]:
-        logger.info(f"{event} {message}")
-
-    if get_param('enabled', default="1") == "0":
-        print("APP DISABLED", )
-        return
+        ]:
+        logger.info(f"{event}: {message}")
     linked_id = message.Linkedid
     context = message.Context
     uniqueid = message.Uniqueid
-    call_data = get_call_data(linked_id)
+
+    call_data = r.json().get(linked_id, "$")
 
     if event == "Newchannel":
         if not call_data:
-            caller = message.CallerIDnum
-            exten = message.Exten
-            insert_data = {
+            call_data = {
                 'start_time': time.time(),
                 'context': context,
                 'uniqueid': uniqueid,
             }
+            caller = message.CallerIDnum
+            exten = message.Exten
             if config.get_context_type(context) == 'external':
-                insert_data.update({"type": 2, "external": caller})
+                call_data.update({"type": 2, "external": caller})
                 if config.get_param('smart_route', default="0") == "1":
                     try:
                         resp = bitrix.call_bitrix('telephony.externalCall.searchCrmEntities', {'PHONE_NUMBER': caller})
@@ -101,7 +69,7 @@ async def ami_callback(mngr: Manager, message: Message):
                             endpoint = bitrix.get_user_phone(user_id=user_id)
                             if endpoint:
                                 internal, context = endpoint
-                                insert_data.update({"internal": internal})
+                                call_data.update({"internal": internal})
                                 payload = {
                                     "Action": "Redirect",
                                     "Channel": message.Channel,
@@ -111,54 +79,59 @@ async def ami_callback(mngr: Manager, message: Message):
                                 }
                                 asyncio.create_task(ami_tools.run_action(payload))
                     except Exception as e:
-                        print(f"Smart routing failed: {e}")
                         logger.info(f"Smart routing failed: {e}")
-
             elif config.get_context_type(context) == 'internal':
-                insert_data.update({"type": 1, "external": exten, "internal": caller})
-            update_call_data(linked_id, **insert_data)
+                call_data.update({"type": 1, "external": exten, "internal": caller})
+            r.json().set(linked_id, "$", call_data)
+            r.expire(linked_id, 7200)
         else:
             internal_phone = message.Channel.split('/')[1].split('-')[0]
             if config.get_context_type(context) == 'internal':
-                update_call_data(linked_id, internal=internal_phone)
+                r.json().set(linked_id, "$.internal", internal_phone)
+
+            call_data = call_data[0]
             call_id = call_data.get('call_id')
             if not call_id:
                 # ignore local calls
-                if (config.get_context_type(context) == 'internal' and
+                if (config.get_context_type(context) == 'internal' and 
                     config.get_context_type(call_data['context']) == 'internal'):
                     print("local call")
-                    delete_call_data(linked_id)
+                    r.json().delete(linked_id, "$")
                     return
                 call_id = bitrix.register_call(call_data)
-                update_call_data(linked_id, call_id=call_id)
+                r.json().set(linked_id, "$.call_id", call_id)
             else:
-                if int(get_param('show_card', default="1")) == "1":
+                if int(config.get_param('show_card', default="1")) == "1":
                     bitrix.card_action(call_id, internal_phone, 'show')
+
     elif not call_data:
         return
-
+    
     elif event == "VarSet":
         if message.Variable == "MIXMONITOR_FILENAME":
-            update_call_data(linked_id, file_path=message.Value)
-        elif message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default="1") == "1":
-            update_call_data(linked_id, file_path=f"{message.Value}.wav")
-            update_call_data(linked_id, status='vm')
+            r.json().set(linked_id, "$.file_path", message.Value)
+        if message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default="1") == "1":
+            r.json().set(linked_id, "$.file_path", f"{message.Value}.wav")
+            r.json().set(linked_id, "$.status", 'vm')
     elif event == "DialEnd":
+        call_data = call_data[0]
         if message.DialStatus == "ANSWER" and config.get_context_type(context) == 'external':
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
-            update_call_data(linked_id, internal=internal_phone)
-            if int(get_param('show_card', default="1")) == "2":
+            r.json().set(linked_id, "$.internal", internal_phone)
+            if int(config.get_param('show_card', default="1")) == "2":
                 bitrix.card_action(call_data.get('call_id'), internal_phone, 'show')
         status = call_data.get('status')
         if status != 200:
             dial_status = STATUSES.get(message.DialStatus)
-            update_call_data(linked_id, status=dial_status)
+            r.json().set(linked_id, "$.status", dial_status)
+
     elif event == "Hangup":
+        call_data = call_data[0]
         if call_data.get('uniqueid') == uniqueid:
             call_data['duration'] = round(time.time() - call_data['start_time'])
-            resp = bitrix.finish_call(call_data)
-            if resp and resp.status_code == 200:
-                delete_call_data(linked_id)
+            bitrix.finish_call(call_data)
+            r.json().delete(linked_id, "$")
+
 
 def on_connect(mngr: Manager):
     print(
@@ -167,7 +140,7 @@ def on_connect(mngr: Manager):
     )
 
 def run():
-    print(f"AMI.sql started")
+    print(f"AMI.redis started")
     manager.on_connect = on_connect
     manager.connect(run_forever=True)
 

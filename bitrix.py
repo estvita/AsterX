@@ -138,8 +138,8 @@ def register_call(call_data: dict, user_id=None):
     payload = {
         'USER_ID': user_id,
         'PHONE_NUMBER': external,
-        'CRM_CREATE': int(get_param('crm_create', default=0)),
-        'SHOW': 1 if int(get_param('show_card', default=0)) == 1 else 0,
+        'CRM_CREATE': int(get_param('crm_create', default=1)),
+        'SHOW': 1 if int(get_param('show_card', default=1)) == 1 else 0,
         'TYPE': call_data.get('type', 1),
     }
     resp = call_bitrix('telephony.externalcall.register', payload)
@@ -194,29 +194,53 @@ def finish_call(call_data: dict, user_id=None):
 
 def get_user_phone(user_id=None):
     conn = sqlite3.connect(APP_DB)
+    
     if user_id:
+        # Сначала ищем по user_id
         cur = conn.execute("SELECT user_phone, context FROM users WHERE user_id = ?", (user_id,))
         row = cur.fetchone()
         if row and row[0] and row[1]:
             conn.close()
             return row[0], row[1]  # (user_phone, context)
+
+        # Запрашиваем данные у Битрикса
         payload = {'ID': user_id}
         resp = call_bitrix('user.get', payload)
         resp.raise_for_status()
         user_data = resp.json().get('result', [])
-        user_phone = user_data[0].get('UF_PHONE_INNER')
-        if user_data and user_phone:
-            # Возможно, контекста нет при первом добавлении
-            conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
-                         (user_phone, user_id))
-            conn.commit()
-            # Попробовать получить контекст только что записанного номера
-            cur = conn.execute("SELECT user_phone, context FROM users WHERE user_phone = ?", (user_phone,))
-            row = cur.fetchone()
-            conn.close()
-            if row and row[0] and row[1]:
-                return row[0], row[1]
-            return None
+        
+        if user_data:
+            user_phone = user_data[0].get('UF_PHONE_INNER')
+
+            if user_phone:
+                # Сначала ищем строку по user_phone, чтобы сохранить context
+                cur = conn.execute("SELECT context FROM users WHERE user_phone = ?", (user_phone,))
+                existing_row = cur.fetchone()
+                context = existing_row[0] if existing_row else None
+
+                # Обновляем существующую строку, если есть, или вставляем новую
+                cur = conn.execute("SELECT 1 FROM users WHERE user_phone = ?", (user_phone,))
+                if cur.fetchone():
+                    conn.execute(
+                        "UPDATE users SET user_id = ?, context = COALESCE(context, ?) WHERE user_phone = ?",
+                        (user_id, context, user_phone)
+                    )
+                else:
+                    conn.execute(
+                        "INSERT INTO users(user_phone, user_id, context) VALUES (?, ?, ?)",
+                        (user_phone, user_id, context)
+                    )
+
+                conn.commit()
+
+                # Возвращаем данные
+                cur = conn.execute("SELECT user_phone, context FROM users WHERE user_phone = ?", (user_phone,))
+                row = cur.fetchone()
+                conn.close()
+                if row and row[0] and row[1]:
+                    return row[0], row[1]
+                return None
+
         conn.close()
         return None
 
