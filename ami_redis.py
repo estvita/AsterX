@@ -88,6 +88,7 @@ async def ami_callback(mngr: Manager, message: Message):
             internal_phone = message.Channel.split('/')[1].split('-')[0]
             if config.get_context_type(context) == 'internal':
                 r.json().set(linked_id, "$.internal", internal_phone)
+                call_data['internal'] = internal_phone
 
             call_data = call_data[0]
             call_id = call_data.get('call_id')

@@ -118,6 +118,7 @@ async def ami_callback(mngr: Manager, message: Message):
         else:
             internal_phone = message.Channel.split('/')[1].split('-')[0]
             if config.get_context_type(context) == 'internal':
+                call_data['internal'] = internal_phone
                 update_call_data(linked_id, internal=internal_phone)
             call_id = call_data.get('call_id')
             if not call_id:
