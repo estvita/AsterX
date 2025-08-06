@@ -116,7 +116,7 @@ async def ami_callback(mngr: Manager, message: Message):
             r.json().set(linked_id, "$.status", 'vm')
     elif event == "DialEnd":
         call_data = call_data[0]
-        if message.DialStatus == "ANSWER" and config.get_context_type(context) == 'external':
+        if message.DialStatus == "ANSWER":
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
             r.json().set(linked_id, "$.internal", internal_phone)
             if int(config.get_param('show_card', default="1")) == "2":
