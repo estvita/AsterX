@@ -140,8 +140,13 @@ async def ami_callback(mngr: Manager, message: Message):
         if message.Variable == "MIXMONITOR_FILENAME":
             update_call_data(linked_id, file_path=message.Value)
         elif message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default="1") == "1":
-            update_call_data(linked_id, file_path=f"{message.Value}.wav")
-            update_call_data(linked_id, status='vm')
+            update_call_data(linked_id, 
+                             file_path=f"{message.Value}.wav",
+                             status='vm')
+    elif event == "Newexten":
+        if message.Application == "VoiceMail":
+            internal_phone = message.AppData.split('@')[0]
+            update_call_data(linked_id, internal=internal_phone)
     elif event == "DialEnd":
         if message.DialStatus == "ANSWER":
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]

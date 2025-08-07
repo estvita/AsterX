@@ -244,7 +244,7 @@ def get_user_phone(user_id=None):
         conn.close()
         return None
 
-    resp = call_bitrix('user.get')
+    resp = call_bitrix('user.get', {"ACTIVE": True})
     resp.raise_for_status()
     users = resp.json().get('result', [])
     for u in users:
