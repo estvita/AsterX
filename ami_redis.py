@@ -116,13 +116,12 @@ async def ami_callback(mngr: Manager, message: Message):
             r.json().set(linked_id, "$.status", 'vm')
     elif event == "DialEnd":
         call_data = call_data[0]
-        if message.DialStatus == "ANSWER":
+        if message.DialStatus == "ANSWER" and call_data.get('type') == 2:
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
             r.json().set(linked_id, "$.internal", internal_phone)
             if int(config.get_param('show_card', default="1")) == "2":
                 bitrix.card_action(call_data.get('call_id'), internal_phone, 'show')
-        status = call_data.get('status')
-        if status != 200:
+        if call_data.get('status') != 200:
             dial_status = STATUSES.get(message.DialStatus)
             r.json().set(linked_id, "$.status", dial_status)
 
