@@ -185,7 +185,6 @@ def finish_call(call_data: dict, user_id=None):
         'STATUS_CODE': call_status
     }
     resp = call_bitrix('telephony.externalcall.finish', payload)
-    resp.raise_for_status()
     if call_status in [200, 'vm']:
         file_base64 = utils.get_file(call_data)
         if file_base64:

@@ -36,12 +36,14 @@ async def listen(core_info=None):
                         config.save_param("crm_create", data.get('crm_create', ''))
                         config.save_param("vm_send", data.get('vm_send', ''))
                         config.save_param("smart_route", data.get('smart_route', ''))
+                        config.save_param("default_user_id", data.get('default_user_id', ''))
                         bitrix.get_user_phone()
                     elif event == 'settings_update':
                         config.save_param("show_card", data.get('show_card', ''))
                         config.save_param("crm_create", data.get('crm_create', ''))
                         config.save_param("vm_send", data.get('vm_send', ''))
                         config.save_param("smart_route", data.get('smart_route', ''))
+                        config.save_param("default_user_id", data.get('default_user_id', ''))
                     elif event == 'refresh_users':
                         config.clear_table('users')                        
                         bitrix.get_user_phone()
