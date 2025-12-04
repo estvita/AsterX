@@ -141,6 +141,7 @@ def register_call(call_data: dict, user_id=None):
         'CRM_CREATE': int(get_param('crm_create', default=1)),
         'SHOW': 1 if int(get_param('show_card', default=1)) == 1 else 0,
         'TYPE': call_data.get('type', 1),
+        'LINE_NUMBER': call_data.get('line_number', 'default'),
     }
     resp = call_bitrix('telephony.externalcall.register', payload)
     reg_data = resp.json()

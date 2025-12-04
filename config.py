@@ -58,6 +58,7 @@ def prepare_db():
         type INTEGER,
         external TEXT,
         internal TEXT,
+        line_number TEXT,
         call_id TEXT,
         file_path TEXT,
         status INTEGER

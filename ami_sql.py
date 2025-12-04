@@ -89,7 +89,7 @@ async def ami_callback(mngr: Manager, message: Message):
                 'uniqueid': uniqueid,
             }
             if config.get_context_type(context) == 'external':
-                insert_data.update({"type": 2, "external": caller})
+                insert_data.update({"type": 2, "external": caller, "line_number": exten})
                 if config.get_param('smart_route', default="0") == "1":
                     try:
                         resp = bitrix.call_bitrix('telephony.externalCall.searchCrmEntities', {'PHONE_NUMBER': caller})
