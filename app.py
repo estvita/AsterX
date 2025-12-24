@@ -17,8 +17,6 @@ except ImportError as e:
 
 app = Flask(__name__)
 
-print(config.TOKEN)
-
 @app.route('/', methods=['GET', 'POST'])
 def project_info():
     return jsonify(project.data)  

@@ -95,6 +95,8 @@ def get_user_id_remote(user_phone):
         }
     }
     resp = call_bitrix('user.get', payload)
+    if not resp:
+        return get_param('default_user_id', default='1')
     resp_data = resp.json()
     resp.raise_for_status()
     result = resp_data.get('result', [])
@@ -144,6 +146,8 @@ def register_call(call_data: dict, user_id=None):
         'LINE_NUMBER': call_data.get('line_number', 'default'),
     }
     resp = call_bitrix('telephony.externalcall.register', payload)
+    if not resp:
+        return None
     reg_data = resp.json()
     resp.raise_for_status()
     result = reg_data.get('result', {})
@@ -206,6 +210,9 @@ def get_user_phone(user_id=None):
         # Запрашиваем данные у Битрикса
         payload = {'ID': user_id}
         resp = call_bitrix('user.get', payload)
+        if not resp:
+            conn.close()
+            return None
         resp.raise_for_status()
         user_data = resp.json().get('result', [])
         
@@ -245,6 +252,9 @@ def get_user_phone(user_id=None):
         return None
 
     resp = call_bitrix('user.get', {"ACTIVE": True})
+    if not resp:
+        conn.close()
+        return
     resp.raise_for_status()
     users = resp.json().get('result', [])
     for u in users:
