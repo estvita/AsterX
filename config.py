@@ -146,5 +146,4 @@ def get_context_type(context):
         
 
 CRM_CREATE = int(get_param('crm_create', default=0))
-SHOW_CARD = int(get_param('show_card', default=1))
-DEFAULT_USER_ID = get_param('default_user_id', default='1')
+DEFAULT_USER_ID = get_param('default_user_id', section='bitrix', default='1')

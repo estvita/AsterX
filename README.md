@@ -43,7 +43,7 @@ nano config.ini
 [bitrix] parameters:
 + [url] - Address of the incoming webhook.
 + [token] - Issued by Bitrix when creating an outgoing webhook.
-+ [crm_create] - Whether to create a CRM entity or not (1/0).
++ [crm_create] - Whether to create a CRM entity or not. 0 - None, 1 - All, 2 - only for inbound call, 3 - only for outbound call
 + [show_card] -  0 - not show, 1 - on call, 2 - on answer
 + [default_user_id] - Lost incoming calls are registered to this user (default 1).
 

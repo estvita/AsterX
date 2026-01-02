@@ -9,6 +9,7 @@ from pprint import pprint
 import asterx
 import config
 import ami_tools
+import bitrix
 
 def extract_core_info(msg: Message):
     output = msg.Output
@@ -30,6 +31,7 @@ def extract_core_info(msg: Message):
 
 def async_core_info(core_info_container):
     resp = asyncio.run(ami_tools.run_action({"Action": "Command", "Command": "core show settings"}))
+    bitrix.get_user_phone()
     contexts_dict = asyncio.run(ami_tools.update_all_peers())
     info = extract_core_info(resp)
     contexts = [{"context": c, "endpoint": e} for c, e in contexts_dict.items()]

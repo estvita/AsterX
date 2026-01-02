@@ -96,13 +96,13 @@ def get_user_id_remote(user_phone):
     }
     resp = call_bitrix('user.get', payload)
     if not resp:
-        return get_param('default_user_id', default='1')
+        return config.DEFAULT_USER_ID
     resp_data = resp.json()
     resp.raise_for_status()
     result = resp_data.get('result', [])
     if result:
         return result[0].get('ID')
-    return get_param('default_user_id', default='1')
+    return config.DEFAULT_USER_ID
 
 def get_user_id(user_phone):
     conn = sqlite3.connect(APP_DB)
@@ -116,7 +116,7 @@ def get_user_id(user_phone):
     remote_id = get_user_id_remote(user_phone)
 
     # Сохраним в случае успеха (не дефолтного)
-    if remote_id and remote_id != get_param('default_user_id', default='1'):
+    if remote_id and remote_id != config.DEFAULT_USER_ID:
         conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
                      (user_phone, remote_id))
         conn.commit()
@@ -131,18 +131,29 @@ def register_call(call_data: dict, user_id=None):
     if not user_id:
         internal = call_data.get('internal')
         if not internal:
-            user_id = get_param('default_user_id', default='1')
+            user_id = config.DEFAULT_USER_ID
         else:
             user_id = get_user_id(internal)
     if not user_id:
-        return None    
+        return None
+    
+    crm_create_setting = int(get_param('crm_create', section='bitrix', default=1))
+    call_type = int(call_data.get('type', 1))
+
+    crm_create = 0
+    if crm_create_setting == 1:
+        crm_create = 1
+    elif crm_create_setting == 2 and call_type == 2:
+        crm_create = 1
+    elif crm_create_setting == 3 and call_type == 1:
+        crm_create = 1
 
     payload = {
         'USER_ID': user_id,
         'PHONE_NUMBER': external,
-        'CRM_CREATE': int(get_param('crm_create', default=1)),
+        'CRM_CREATE': crm_create,
         'SHOW': 1 if int(get_param('show_card', default=1)) == 1 else 0,
-        'TYPE': call_data.get('type', 1),
+        'TYPE': call_type,
         'LINE_NUMBER': call_data.get('line_number', 'default'),
     }
     resp = call_bitrix('telephony.externalcall.register', payload)
@@ -170,7 +181,7 @@ def upload_file(call_data, file_base64):
 def finish_call(call_data: dict, user_id=None):
     internal = call_data.get('internal')
     if not internal:
-        user_id = get_param('default_user_id', default='1')
+        user_id = config.DEFAULT_USER_ID
     else:
         user_id = get_user_id(internal)
     if not user_id:
