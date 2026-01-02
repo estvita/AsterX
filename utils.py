@@ -66,7 +66,6 @@ def load_private_key(filepath, password=None):
         paramiko.RSAKey,
         paramiko.Ed25519Key,
         paramiko.ECDSAKey,
-        paramiko.DSSKey
     ]
     for key_cls in key_classes:
         try:

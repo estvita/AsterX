@@ -25,6 +25,41 @@ async def run_action(action_obj):
     return result
 
 
+def update_db_user_context(peer, peer_type, context, context_map=None):
+    if context and context_map is not None and context not in context_map:
+        context_map[context] = peer
+    
+    conn = sqlite3.connect(APP_DB)
+    cur = conn.execute("SELECT user_id FROM users WHERE user_phone=?", (peer,))
+    row = cur.fetchone()
+    if row and row[0]:
+        conn.execute(
+            "UPDATE users SET type=?, context=? WHERE user_id=?",
+            (peer_type, context, row[0])
+        )
+    else:
+        conn.execute(
+            "INSERT OR IGNORE INTO users(user_phone, type, context) VALUES (?, ?, ?)",
+            (peer, peer_type, context)
+        )
+    conn.commit()
+    conn.close()
+
+
+async def get_sip_context(manager, peer):
+    detail = await manager.send_action({'Action': 'SIPshowpeer', 'Peer': peer})
+    return detail.get('Context')
+
+
+async def get_pjsip_context(manager, endpoint):
+    detail = await manager.send_action({'Action': 'PJSIPShowEndpoint', 'Endpoint': endpoint})
+    if isinstance(detail, list):
+        for d in detail:
+            if d.get('Event') == 'EndpointDetail':
+                return d.get('Context')
+    return None
+
+
 async def update_all_peers():
     manager = Manager.from_config(config_file)
     await manager.connect()
@@ -32,58 +67,24 @@ async def update_all_peers():
     # SIP peers
     sip_peers = await manager.send_action({'Action': 'SIPpeers'})
     if not sip_peers or not isinstance(sip_peers, list):
-        print(sip_peers)
+        if sip_peers and hasattr(sip_peers, 'get') and sip_peers.get('Response') == 'Error' and 'Invalid/unknown command' in sip_peers.get('Message', ''):
+            print("SIPpeers command not found. Skipping SIP peers update.")
+        else:
+            print(sip_peers)
     else:
         for msg in sip_peers:
             if msg.get('Event') == 'PeerEntry' and msg.get('ObjectName'):
                 peer = msg.get('ObjectName')
-                detail = await manager.send_action({'Action': 'SIPshowpeer', 'Peer': peer})
-                context = detail.get('Context')
-                if context and context not in context_map:
-                    context_map[context] = peer
-                conn = sqlite3.connect(APP_DB)
-                cur = conn.execute("SELECT user_id FROM users WHERE user_phone=?", (peer,))
-                row = cur.fetchone()
-                if row and row[0]:
-                    conn.execute(
-                        "UPDATE users SET type=?, context=? WHERE user_id=?",
-                        ('SIP', context, row[0])
-                    )
-                else:
-                    conn.execute(
-                        "INSERT OR IGNORE INTO users(user_phone, type, context) VALUES (?, ?, ?)",
-                        (peer, 'SIP', context)
-                    )
-                conn.commit()
-                conn.close()
+                context = await get_sip_context(manager, peer)
+                update_db_user_context(peer, 'SIP', context, context_map)
 
     # PJSIP endpoints
     pjsip_endpoints = await manager.send_action({'Action': 'PJSIPShowEndpoints'})
     endpoints = [m for m in pjsip_endpoints if m.get('Event') == 'EndpointList' and m.get('ObjectName')]
     for ep in endpoints:
         endpoint = ep.get('ObjectName')
-        detail = await manager.send_action({'Action': 'PJSIPShowEndpoint', 'Endpoint': endpoint})
-        context = None
-        for d in detail:
-            if d.get('Event') == 'EndpointDetail':
-                context = d.get('Context')
-        if context and context not in context_map:
-            context_map[context] = endpoint
-        conn = sqlite3.connect(APP_DB)
-        cur = conn.execute("SELECT user_id FROM users WHERE user_phone=?", (endpoint,))
-        row = cur.fetchone()
-        if row and row[0]:
-            conn.execute(
-                "UPDATE users SET type=?, context=? WHERE user_id=?",
-                ('PJSIP', context, row[0])
-            )
-        else:
-            conn.execute(
-                "INSERT OR IGNORE INTO users(user_phone, type, context) VALUES (?, ?, ?)",
-                (endpoint, 'PJSIP', context)
-            )
-        conn.commit()
-        conn.close()
+        context = await get_pjsip_context(manager, endpoint)
+        update_db_user_context(endpoint, 'PJSIP', context, context_map)
     manager.close()
     
     return context_map
@@ -136,3 +137,23 @@ async def originate(internal, context, external, call_id=None):
             data_saved = True
     callmanager.clean_originate(call)
     callmanager.close()
+
+
+async def update_peer_context(peer):
+    try:
+        manager = Manager.from_config(config_file)
+        await manager.connect()
+        
+        context = await get_sip_context(manager, peer)
+        peer_type = 'SIP'
+        
+        if not context:
+            context = await get_pjsip_context(manager, peer)
+            peer_type = 'PJSIP'
+
+        manager.close()
+
+        if context:
+            update_db_user_context(peer, peer_type, context)
+    except Exception as e:
+        print(f"Error updating context for {peer}: {e}")

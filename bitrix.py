@@ -3,11 +3,13 @@ import sys
 import requests
 import logging
 import sqlite3
+import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config
 from config import get_param, save_param
 import utils
+import ami_tools
 
 B24_URL = config.B24_URL
 LOGGING = config.LOGGING
@@ -120,6 +122,11 @@ def get_user_id(user_phone):
         conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
                      (user_phone, remote_id))
         conn.commit()
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(ami_tools.update_peer_context(user_phone))
+        except RuntimeError:
+            asyncio.run(ami_tools.update_peer_context(user_phone))
     conn.close()
     return remote_id
     
@@ -248,6 +255,13 @@ def get_user_phone(user_id=None):
                         "INSERT INTO users(user_phone, user_id, context) VALUES (?, ?, ?)",
                         (user_phone, user_id, context)
                     )
+                    # Если контекста нет, пробуем получить его из Asterisk
+                    if not context:
+                        try:
+                            loop = asyncio.get_running_loop()
+                            loop.create_task(ami_tools.update_peer_context(user_phone))
+                        except RuntimeError:
+                            asyncio.run(ami_tools.update_peer_context(user_phone))
 
                 conn.commit()
 
