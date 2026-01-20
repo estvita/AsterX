@@ -80,11 +80,15 @@ async def update_all_peers():
 
     # PJSIP endpoints
     pjsip_endpoints = await manager.send_action({'Action': 'PJSIPShowEndpoints'})
-    endpoints = [m for m in pjsip_endpoints if m.get('Event') == 'EndpointList' and m.get('ObjectName')]
-    for ep in endpoints:
-        endpoint = ep.get('ObjectName')
-        context = await get_pjsip_context(manager, endpoint)
-        update_db_user_context(endpoint, 'PJSIP', context, context_map)
+    if isinstance(pjsip_endpoints, list):
+        endpoints = [m for m in pjsip_endpoints if isinstance(m, dict) and m.get('Event') == 'EndpointList' and m.get('ObjectName')]
+        for ep in endpoints:
+            endpoint = ep.get('ObjectName')
+            context = await get_pjsip_context(manager, endpoint)
+            update_db_user_context(endpoint, 'PJSIP', context, context_map)
+    elif isinstance(pjsip_endpoints, dict) and pjsip_endpoints.get('Response') == 'Error':
+        pass  # Just ignore PJSIP errors or missing module to avoid crash
+    
     manager.close()
     
     return context_map
