@@ -98,13 +98,13 @@ def get_user_id_remote(user_phone):
     }
     resp = call_bitrix('user.get', payload)
     if not resp:
-        return config.DEFAULT_USER_ID
+        return get_param('default_user_id', section='bitrix', default='1')
     resp_data = resp.json()
     resp.raise_for_status()
     result = resp_data.get('result', [])
     if result:
         return result[0].get('ID')
-    return config.DEFAULT_USER_ID
+    return get_param('default_user_id', section='bitrix', default='1')
 
 def get_user_id(user_phone):
     conn = sqlite3.connect(APP_DB)
@@ -118,7 +118,7 @@ def get_user_id(user_phone):
     remote_id = get_user_id_remote(user_phone)
 
     # Сохраним в случае успеха (не дефолтного)
-    if remote_id and remote_id != config.DEFAULT_USER_ID:
+    if remote_id and remote_id != get_param('default_user_id', section='bitrix', default='1'):
         conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
                      (user_phone, remote_id))
         conn.commit()
@@ -138,7 +138,7 @@ def register_call(call_data: dict, user_id=None):
     if not user_id:
         internal = call_data.get('internal')
         if not internal:
-            user_id = config.DEFAULT_USER_ID
+            user_id = get_param('default_user_id', section='bitrix', default='1')
         else:
             user_id = get_user_id(internal)
     if not user_id:
@@ -188,7 +188,7 @@ def upload_file(call_data, file_base64):
 def finish_call(call_data: dict, user_id=None):
     internal = call_data.get('internal')
     if not internal:
-        user_id = config.DEFAULT_USER_ID
+        user_id = get_param('default_user_id', section='bitrix', default='1')
     else:
         user_id = get_user_id(internal)
     if not user_id:

@@ -143,7 +143,4 @@ def get_context_type(context):
         if row:
             return row[0]
     return None
-        
 
-CRM_CREATE = int(get_param('crm_create', default=0))
-DEFAULT_USER_ID = get_param('default_user_id', section='bitrix', default='1')
