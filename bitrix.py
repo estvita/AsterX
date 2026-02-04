@@ -23,8 +23,7 @@ logger = logging.getLogger()
 
 def refresh_token():
     member_id = get_param('member_id')
-    user_token = get_param('user_token')
-    if not member_id or not user_token:
+    if not member_id:
         return False
 
     payload = {
@@ -34,7 +33,6 @@ def refresh_token():
     server_url = f"{config.CONTROL_SERVER_HTTP}/api/asterx/refresh_token/"
 
     headers = {
-        'Authorization': f'Token {user_token}',
         'Content-Type': 'application/json'
     }
 
