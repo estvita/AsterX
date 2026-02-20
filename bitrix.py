@@ -197,7 +197,7 @@ def finish_call(call_data: dict, user_id=None):
         call_data.update({"call_id": call_id})
     if not user_id or not call_id:
         return None
-    call_status = call_data.get('status', 403)
+    call_status = call_data.get('status') or 304
     payload = {
         'CALL_ID': call_id,
         'USER_ID': user_id,
