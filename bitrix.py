@@ -153,14 +153,19 @@ def register_call(call_data: dict, user_id=None):
     elif crm_create_setting == 3 and call_type == 1:
         crm_create = 1
 
+    show = 0
+    if call_type == 1:
+         show = int(get_param('show_card', default=1))
+
     payload = {
         'USER_ID': user_id,
         'PHONE_NUMBER': external,
         'CRM_CREATE': crm_create,
-        'SHOW': 1 if int(get_param('show_card', default=1)) == 1 else 0,
+        'SHOW': show,
         'TYPE': call_type,
         'LINE_NUMBER': call_data.get('line_number', 'default'),
     }
+
     resp = call_bitrix('telephony.externalcall.register', payload)
     if not resp:
         return None
