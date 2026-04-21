@@ -81,7 +81,7 @@ async def update_all_peers():
     # PJSIP endpoints
     pjsip_endpoints = await manager.send_action({'Action': 'PJSIPShowEndpoints'})
     if isinstance(pjsip_endpoints, list):
-        endpoints = [m for m in pjsip_endpoints if isinstance(m, dict) and m.get('Event') == 'EndpointList' and m.get('ObjectName')]
+        endpoints = [m for m in pjsip_endpoints if hasattr(m, 'get') and m.get('Event') == 'EndpointList' and m.get('ObjectName')]
         for ep in endpoints:
             endpoint = ep.get('ObjectName')
             context = await get_pjsip_context(manager, endpoint)
