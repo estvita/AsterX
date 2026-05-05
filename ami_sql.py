@@ -31,6 +31,7 @@ STATUSES = {
 }
 
 conn = sqlite3.connect(APP_DB)
+pending_calls = set()
 
 def get_call_data(linked_id):
     cur = conn.execute('SELECT * FROM calls WHERE linked_id = ?', (linked_id,))
@@ -83,6 +84,7 @@ async def ami_callback(mngr: Manager, message: Message):
         if not call_data:
             caller = message.CallerIDnum
             exten = message.Exten
+            pending_calls.add(linked_id)
             insert_data = {
                 'start_time': time.time(),
                 'context': context,
@@ -116,6 +118,7 @@ async def ami_callback(mngr: Manager, message: Message):
                 insert_data.update({"type": 1, "external": exten, "internal": caller})
             update_call_data(linked_id, **insert_data)
         else:
+            pending_calls.discard(linked_id)
             internal_phone = message.Channel.split('/')[1].split('-')[0]
             if config.get_context_type(context) == 'internal':
                 call_data['internal'] = internal_phone
@@ -158,9 +161,14 @@ async def ami_callback(mngr: Manager, message: Message):
             update_call_data(linked_id, status=dial_status)
     elif event == "Hangup":
         if call_data.get('uniqueid') == uniqueid:
+            if linked_id in pending_calls:
+                pending_calls.discard(linked_id)
+                delete_call_data(linked_id)
+                return
             call_data['duration'] = round(time.time() - call_data['start_time'])
             resp = bitrix.finish_call(call_data)
             if resp and resp.status_code == 200:
+                pending_calls.discard(linked_id)
                 delete_call_data(linked_id)
 
 def on_connect(mngr: Manager):
