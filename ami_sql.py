@@ -84,7 +84,6 @@ async def ami_callback(mngr: Manager, message: Message):
         if not call_data:
             caller = message.CallerIDnum
             exten = message.Exten
-            pending_calls.add(linked_id)
             insert_data = {
                 'start_time': time.time(),
                 'context': context,
@@ -115,6 +114,7 @@ async def ami_callback(mngr: Manager, message: Message):
                         logger.info(f"Smart routing failed: {e}")
 
             elif config.get_context_type(context) == 'internal':
+                pending_calls.add(linked_id)
                 insert_data.update({"type": 1, "external": exten, "internal": caller})
             update_call_data(linked_id, **insert_data)
         else:
