@@ -11,6 +11,7 @@ from panoramisk.call_manager import CallManager
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config
+import call_store
 APP_DB = config.APP_DB
 config_file = config.config_file
 manager = Manager.from_config(config_file)
@@ -30,18 +31,16 @@ def update_db_user_context(peer, peer_type, context, context_map=None):
         context_map[context] = peer
     
     conn = sqlite3.connect(APP_DB)
-    cur = conn.execute("SELECT user_id FROM users WHERE user_phone=?", (peer,))
-    row = cur.fetchone()
-    if row and row[0]:
-        conn.execute(
-            "UPDATE users SET type=?, context=? WHERE user_id=?",
-            (peer_type, context, row[0])
-        )
-    else:
-        conn.execute(
-            "INSERT OR IGNORE INTO users(user_phone, type, context) VALUES (?, ?, ?)",
-            (peer, peer_type, context)
-        )
+    conn.execute(
+        '''
+        INSERT INTO users(user_phone, type, context)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_phone) DO UPDATE SET
+            type=excluded.type,
+            context=excluded.context
+        ''',
+        (peer, peer_type, context)
+    )
     conn.commit()
     conn.close()
 
@@ -95,19 +94,17 @@ async def update_all_peers():
 
 
 def save_call_data(data):
-    conn = sqlite3.connect(APP_DB)
-    cur = conn.cursor()
-    cur.execute(
-        '''
-        INSERT OR REPLACE INTO calls (
-            linked_id, start_time, context, uniqueid, type,
-            external, internal, call_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''',
-        data
+    linked_id, start_time, context, uniqueid, call_type, external, internal, call_id = data
+    call_store.update_call_data(
+        linked_id,
+        start_time=start_time,
+        context=context,
+        uniqueid=uniqueid,
+        type=call_type,
+        external=external,
+        internal=internal,
+        call_id=call_id,
     )
-    conn.commit()
-    conn.close()
 
 
 async def originate(internal, context, external, call_id=None):

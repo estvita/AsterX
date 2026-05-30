@@ -59,6 +59,9 @@ def call_bitrix(method, payload=None, retried=False):
         proto = get_param('protocol')
         domain = get_param('domain')
         access_token = get_param('access_token')
+        if not proto or not domain or not access_token:
+            logger.error(f"B24 cloud credentials are not configured for method {method}")
+            return None
         b24_url = f"{proto}://{domain}/rest/{method}?auth={access_token}"
     else:
         b24_url = f'{B24_URL}{method}'
@@ -117,8 +120,14 @@ def get_user_id(user_phone):
 
     # Сохраним в случае успеха (не дефолтного)
     if remote_id and remote_id != get_param('default_user_id', section='bitrix', default='1'):
-        conn.execute("INSERT OR REPLACE INTO users(user_phone, user_id) VALUES (?, ?)",
-                     (user_phone, remote_id))
+        conn.execute(
+            '''
+            INSERT INTO users(user_phone, user_id)
+            VALUES (?, ?)
+            ON CONFLICT(user_phone) DO UPDATE SET user_id=excluded.user_id
+            ''',
+            (user_phone, remote_id)
+        )
         conn.commit()
         try:
             loop = asyncio.get_running_loop()
@@ -211,7 +220,7 @@ def finish_call(call_data: dict, user_id=None):
         'STATUS_CODE': call_status
     }
     resp = call_bitrix('telephony.externalcall.finish', payload)
-    if call_status in [200, 'vm']:
+    if call_data.get('file_path'):
         file_base64 = utils.get_file(call_data)
         if file_base64:
             upload_file(call_data, file_base64)
@@ -241,39 +250,26 @@ def get_user_phone(user_id=None):
             user_phone = user_data[0].get('UF_PHONE_INNER')
 
             if user_phone:
-                # Сначала ищем строку по user_phone, чтобы сохранить context
-                cur = conn.execute("SELECT context FROM users WHERE user_phone = ?", (user_phone,))
-                existing_row = cur.fetchone()
-                context = existing_row[0] if existing_row else None
-
-                # Обновляем существующую строку, если есть, или вставляем новую
-                cur = conn.execute("SELECT 1 FROM users WHERE user_phone = ?", (user_phone,))
-                if cur.fetchone():
-                    conn.execute(
-                        "UPDATE users SET user_id = ?, context = COALESCE(context, ?) WHERE user_phone = ?",
-                        (user_id, context, user_phone)
-                    )
-                else:
-                    conn.execute(
-                        "INSERT INTO users(user_phone, user_id, context) VALUES (?, ?, ?)",
-                        (user_phone, user_id, context)
-                    )
-                    # Если контекста нет, пробуем получить его из Asterisk
-                    if not context:
-                        try:
-                            loop = asyncio.get_running_loop()
-                            loop.create_task(ami_tools.update_peer_context(user_phone))
-                        except RuntimeError:
-                            asyncio.run(ami_tools.update_peer_context(user_phone))
-
+                conn.execute(
+                    '''
+                    INSERT INTO users(user_phone, user_id)
+                    VALUES (?, ?)
+                    ON CONFLICT(user_phone) DO UPDATE SET user_id=excluded.user_id
+                    ''',
+                    (user_phone, user_id)
+                )
                 conn.commit()
 
-                # Возвращаем данные
                 cur = conn.execute("SELECT user_phone, context FROM users WHERE user_phone = ?", (user_phone,))
                 row = cur.fetchone()
                 conn.close()
                 if row and row[0] and row[1]:
                     return row[0], row[1]
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(ami_tools.update_peer_context(user_phone))
+                except RuntimeError:
+                    asyncio.run(ami_tools.update_peer_context(user_phone))
                 return None
 
         conn.close()
@@ -289,12 +285,14 @@ def get_user_phone(user_id=None):
         user_id = u.get('ID')
         user_phone = u.get('UF_PHONE_INNER', '')
         if user_id and user_phone:
-            cur = conn.execute("UPDATE users SET user_id=? WHERE user_phone=?", (user_id, user_phone))
-            if cur.rowcount == 0:
-                conn.execute(
-                    "INSERT INTO users(user_phone, user_id) VALUES (?, ?)",
-                    (user_phone, user_id)
-                )
+            conn.execute(
+                '''
+                INSERT INTO users(user_phone, user_id)
+                VALUES (?, ?)
+                ON CONFLICT(user_phone) DO UPDATE SET user_id=excluded.user_id
+                ''',
+                (user_phone, user_id)
+            )
     conn.commit()
     conn.close()
 

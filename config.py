@@ -1,6 +1,7 @@
 # config.py
 import sqlite3
 import configparser
+import threading
 
 config_file = 'config.ini'
 config = configparser.ConfigParser()
@@ -29,86 +30,122 @@ SSH_KEY = config.get('asterisk', 'key_filepath', fallback=0)
 EXTERNAL_CONTEXTS = [s.strip() for s in config.get('asterisk', 'external_contexts', fallback='from-pstn').split(',')]
 INTERNAL_CONTEXTS = [s.strip() for s in config.get('asterisk', 'internal_contexts', fallback='from-internal').split(',')]
 
+_DB_READY = False
+_APP_CACHE = None
+_CONTEXT_CACHE = None
+_LOCK = threading.RLock()
+
+
+def _db_value(value):
+    if value is None:
+        return None
+    return str(value)
+
+
+def _ensure_db():
+    if not _DB_READY:
+        prepare_db()
+
+
 def prepare_db():
-    conn = sqlite3.connect(APP_DB)
-    cur = conn.cursor()
-    # Таблица context
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS context (
-            context TEXT PRIMARY KEY,
-            type TEXT
-        )
-    ''')
-    # Таблица users
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_phone TEXT PRIMARY KEY,
-            user_id TEXT,
-            type TEXT,
-            context TEXT
-        )
-    ''')
-    # Calls
-    conn.execute('''
-    CREATE TABLE IF NOT EXISTS calls (
-        linked_id TEXT PRIMARY KEY,
-        start_time REAL,
-        context TEXT,
-        uniqueid TEXT,
-        type INTEGER,
-        external TEXT,
-        internal TEXT,
-        line_number TEXT,
-        call_id TEXT,
-        file_path TEXT,
-        status INTEGER
-    )
-    ''')
-    # Таблица app
-    cur.execute('CREATE TABLE IF NOT EXISTS app (key TEXT PRIMARY KEY, value TEXT)')
-    conn.commit()
-    conn.close()
+    global _DB_READY, _APP_CACHE, _CONTEXT_CACHE
+
+    with _LOCK:
+        conn = sqlite3.connect(APP_DB)
+        cur = conn.cursor()
+        # Таблица context
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS context (
+                context TEXT PRIMARY KEY,
+                type TEXT
+            )
+        ''')
+        # Таблица users
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                user_phone TEXT PRIMARY KEY,
+                user_id TEXT,
+                type TEXT,
+                context TEXT
+            )
+        ''')
+        # Таблица app
+        cur.execute('CREATE TABLE IF NOT EXISTS app (key TEXT PRIMARY KEY, value TEXT)')
+
+        conn.commit()
+        conn.close()
+        _DB_READY = True
+        _APP_CACHE = None
+        _CONTEXT_CACHE = None
 
 def clear_table(table):
+    global _APP_CACHE, _CONTEXT_CACHE
+
+    if table not in {'app', 'context', 'users'}:
+        raise ValueError(f"Unsupported table: {table}")
+
+    _ensure_db()
     conn = sqlite3.connect(APP_DB)
     cur = conn.cursor()
     cur.execute(f"DELETE FROM {table}")
     conn.commit()
     conn.close()
+    if table == 'app':
+        _APP_CACHE = {}
+    elif table == 'context':
+        _CONTEXT_CACHE = {}
     
 def save_param(key, value):
+    save_params({key: value})
+
+def save_params(params):
+    global _APP_CACHE
+
+    _ensure_db()
     conn = sqlite3.connect(APP_DB)
     cur = conn.cursor()
-    cur.execute(
-        '''
-        INSERT INTO app (key, value)
-        VALUES (?, ?)
-        ON CONFLICT(key) DO UPDATE SET value=excluded.value
-        ''',
-        (key, value)
-    )
+    for key, value in params.items():
+        cur.execute(
+            '''
+            INSERT INTO app (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value
+            ''',
+            (key, _db_value(value))
+        )
     conn.commit()
     conn.close()
+    if _APP_CACHE is not None:
+        _APP_CACHE.update({key: _db_value(value) for key, value in params.items()})
 
 def fetch_from_db(key):
-    prepare_db()
+    global _APP_CACHE
+
+    _ensure_db()
+    if _APP_CACHE is not None:
+        return _APP_CACHE.get(key)
+
     conn = sqlite3.connect(APP_DB)
-    cur = conn.execute(f"SELECT value FROM app WHERE key=?", (key,))
-    row = cur.fetchone()
+    cur = conn.execute("SELECT key, value FROM app")
+    _APP_CACHE = dict(cur.fetchall())
     conn.close()
-    if row:
-        return row[0]
-    return None
+    return _APP_CACHE.get(key)
 
 def update_contexts_table(contexts):
+    global _CONTEXT_CACHE
+
+    _ensure_db()
     conn = sqlite3.connect(APP_DB)
     cur = conn.cursor()
     cur.execute("DELETE FROM context")
+    context_cache = {}
     for ctx in contexts:
         for context_name, type_value in ctx.items():
             cur.execute("INSERT INTO context (context, type) VALUES (?, ?)", (context_name, type_value))
+            context_cache[context_name] = type_value
     conn.commit()
     conn.close()
+    _CONTEXT_CACHE = context_cache
 
 def get_param(key, section='app', default=None):
     # Если локальный режим — только config
@@ -126,6 +163,12 @@ def get_param(key, section='app', default=None):
         except Exception:
             return default
         
+def get_bool_param(key, section='app', default=False):
+    value = get_param(key, section=section, default=default)
+    if isinstance(value, bool):
+        return value
+    return str(value).lower() in {'1', 'true', 'yes', 'on'}
+
 
 def get_context_type(context):
     if APP_MODE == 'local':
@@ -136,11 +179,15 @@ def get_context_type(context):
         else:
             return None
     elif APP_MODE == 'cloud':
-        conn = sqlite3.connect(APP_DB)
-        cur = conn.execute("SELECT type FROM context WHERE context=?", (context,))
-        row = cur.fetchone()
-        conn.close()
-        if row:
-            return row[0]
-    return None
+        global _CONTEXT_CACHE
 
+        _ensure_db()
+        if _CONTEXT_CACHE is not None:
+            return _CONTEXT_CACHE.get(context)
+
+        conn = sqlite3.connect(APP_DB)
+        cur = conn.execute("SELECT context, type FROM context")
+        _CONTEXT_CACHE = dict(cur.fetchall())
+        conn.close()
+        return _CONTEXT_CACHE.get(context)
+    return None

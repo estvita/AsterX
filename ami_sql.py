@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import logging
-import sqlite3
 import asyncio
 
 from panoramisk import Manager, Message
@@ -14,10 +13,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import bitrix
 import config
 import ami_tools
+import call_store
 
 config_file = config.config_file
 LOGGING = config.LOGGING
-APP_DB = config.APP_DB
 
 
 STATUSES = {
@@ -29,33 +28,6 @@ STATUSES = {
     "CONGESTION": 403,
     "NOANSWER": 304
 }
-
-conn = sqlite3.connect(APP_DB)
-pending_calls = set()
-
-def get_call_data(linked_id):
-    cur = conn.execute('SELECT * FROM calls WHERE linked_id = ?', (linked_id,))
-    row = cur.fetchone()
-    if row:
-        cols = [desc[0] for desc in cur.description]
-        return dict(zip(cols, row))
-    return None
-
-def update_call_data(linked_id, **kwargs):
-    call_data = get_call_data(linked_id)
-    keys, vals = list(kwargs.keys()), list(kwargs.values())
-    if call_data:
-        set_clause = ', '.join(f'{k}=?' for k in keys)
-        conn.execute(f'UPDATE calls SET {set_clause} WHERE linked_id=?', (*vals, linked_id))
-    else:
-        fields = ', '.join(['linked_id'] + keys)
-        q = ', '.join(['?'] * (len(keys) + 1))
-        conn.execute(f'INSERT INTO calls ({fields}) VALUES ({q})', (linked_id, *vals))
-    conn.commit()
-
-def delete_call_data(linked_id):
-    conn.execute('DELETE FROM calls WHERE linked_id=?', (linked_id,))
-    conn.commit()
 
 
 manager = Manager.from_config(config_file)
@@ -78,7 +50,7 @@ async def ami_callback(mngr: Manager, message: Message):
     linked_id = message.Linkedid
     context = message.Context
     uniqueid = message.Uniqueid
-    call_data = get_call_data(linked_id)
+    call_data = call_store.get_call_data(linked_id)
 
     if event == "Newchannel":
         if not call_data:
@@ -114,25 +86,24 @@ async def ami_callback(mngr: Manager, message: Message):
                         logger.info(f"Smart routing failed: {e}")
 
             elif config.get_context_type(context) == 'internal':
-                pending_calls.add(linked_id)
-                insert_data.update({"type": 1, "external": exten, "internal": caller})
-            update_call_data(linked_id, **insert_data)
+                insert_data.update({"type": 1, "external": exten, "internal": caller, "pending": True})
+            call_store.update_call_data(linked_id, **insert_data)
         else:
-            pending_calls.discard(linked_id)
+            call_store.update_call_data(linked_id, pending=False)
             internal_phone = message.Channel.split('/')[1].split('-')[0]
             if config.get_context_type(context) == 'internal':
                 call_data['internal'] = internal_phone
-                update_call_data(linked_id, internal=internal_phone)
+                call_store.update_call_data(linked_id, internal=internal_phone)
             call_id = call_data.get('call_id')
             if not call_id:
                 # ignore local calls
                 if (config.get_context_type(context) == 'internal' and
                     config.get_context_type(call_data['context']) == 'internal'):
                     print("local call")
-                    delete_call_data(linked_id)
+                    call_store.delete_call_data(linked_id)
                     return
                 call_id = bitrix.register_call(call_data)
-                update_call_data(linked_id, call_id=call_id)
+                call_store.update_call_data(linked_id, call_id=call_id)
             else:
                 if config.get_param('show_card', default="1") == "1":
                     bitrix.card_action(call_id, internal_phone, 'show')
@@ -141,35 +112,33 @@ async def ami_callback(mngr: Manager, message: Message):
 
     elif event == "VarSet":
         if message.Variable == "MIXMONITOR_FILENAME":
-            update_call_data(linked_id, file_path=message.Value)
-        elif message.Variable == "VM_MESSAGEFILE" and config.get_param('vm_send', default="1") == "1":
-            update_call_data(linked_id, 
-                             file_path=f"{message.Value}.wav",
-                             status='vm')
+            call_store.update_call_data(linked_id, file_path=message.Value)
+        elif message.Variable == "VM_MESSAGEFILE" and config.get_bool_param('vm_send', default=True):
+            call_store.update_call_data(linked_id, 
+                                        file_path=f"{message.Value}.wav",
+                                        is_voicemail=True)
     elif event == "Newexten":
         if message.Application == "VoiceMail":
             internal_phone = message.AppData.split('@')[0]
-            update_call_data(linked_id, internal=internal_phone)
+            call_store.update_call_data(linked_id, internal=internal_phone)
     elif event == "DialEnd":
         if message.DialStatus == "ANSWER" and call_data.get('type') == 2:
             internal_phone = message.DestChannel.split('/')[1].split('-')[0]
-            update_call_data(linked_id, internal=internal_phone)
+            call_store.update_call_data(linked_id, internal=internal_phone)
             if config.get_param('show_card', default="1") == "2":
                 bitrix.card_action(call_data.get('call_id'), internal_phone, 'show')
         if call_data.get('status') != 200:
             dial_status = STATUSES.get(message.DialStatus)
-            update_call_data(linked_id, status=dial_status)
+            call_store.update_call_data(linked_id, status=dial_status)
     elif event == "Hangup":
         if call_data.get('uniqueid') == uniqueid:
-            if linked_id in pending_calls:
-                pending_calls.discard(linked_id)
-                delete_call_data(linked_id)
+            if call_data.get('pending'):
+                call_store.delete_call_data(linked_id)
                 return
             call_data['duration'] = round(time.time() - call_data['start_time'])
             resp = bitrix.finish_call(call_data)
             if resp and resp.status_code == 200:
-                pending_calls.discard(linked_id)
-                delete_call_data(linked_id)
+                call_store.delete_call_data(linked_id)
 
 def on_connect(mngr: Manager):
     print(

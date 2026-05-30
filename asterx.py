@@ -26,24 +26,31 @@ async def listen(core_info=None):
                     print(data)
                     event = data.get('event')
                     if event == 'setup_complete':
-                        config.save_param("enabled", 1)
-                        config.save_param("member_id", data.get('member_id', ''))
-                        config.save_param("domain", data.get('domain', ''))
-                        config.save_param("protocol", data.get('protocol', ''))
-                        config.save_param("access_token", data.get('access_token', ''))
-                        config.save_param("user_token", data.get('user_token', ''))
-                        config.save_param("show_card", data.get('show_card', ''))
-                        config.save_param("crm_create", data.get('crm_create', ''))
-                        config.save_param("vm_send", data.get('vm_send', ''))
-                        config.save_param("smart_route", data.get('smart_route', ''))
-                        config.save_param("default_user_id", data.get('default_user_id', ''))
-                        bitrix.get_user_phone()
+                        config.save_params({
+                            "enabled": 1,
+                            "member_id": data.get('member_id', ''),
+                            "domain": data.get('domain', ''),
+                            "protocol": data.get('protocol', ''),
+                            "access_token": data.get('access_token', ''),
+                            "user_token": data.get('user_token', ''),
+                            "show_card": data.get('show_card', ''),
+                            "crm_create": data.get('crm_create', ''),
+                            "vm_send": data.get('vm_send', ''),
+                            "smart_route": data.get('smart_route', ''),
+                            "default_user_id": data.get('default_user_id', ''),
+                        })
+                        if data.get('domain') and data.get('protocol') and data.get('access_token'):
+                            bitrix.get_user_phone()
+                        else:
+                            print("B24 cloud credentials are missing in setup_complete")
                     elif event == 'settings_update':
-                        config.save_param("show_card", data.get('show_card', ''))
-                        config.save_param("crm_create", data.get('crm_create', ''))
-                        config.save_param("vm_send", data.get('vm_send', ''))
-                        config.save_param("smart_route", data.get('smart_route', ''))
-                        config.save_param("default_user_id", data.get('default_user_id', ''))
+                        config.save_params({
+                            "show_card": data.get('show_card', ''),
+                            "crm_create": data.get('crm_create', ''),
+                            "vm_send": data.get('vm_send', ''),
+                            "smart_route": data.get('smart_route', ''),
+                            "default_user_id": data.get('default_user_id', ''),
+                        })
                     elif event == 'refresh_users':
                         config.clear_table('users')                        
                         bitrix.get_user_phone()
