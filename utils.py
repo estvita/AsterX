@@ -3,6 +3,7 @@ import sys
 import base64
 import fnmatch
 import requests
+import logging
 from ftplib import FTP
 from urllib.parse import urlparse
 
@@ -15,6 +16,8 @@ RECORD_USER = config.RECORD_USER
 RECORD_PASS = config.RECORD_PASS
 SSH_KEY = config.SSH_KEY
 RECORD_PROTOCOL = config.RECORD_PROTOCOL
+
+logger = logging.getLogger()
 
 
 def ftp_download(partial_file_name: str, directory: str) -> bytes:
@@ -30,7 +33,7 @@ def ftp_download(partial_file_name: str, directory: str) -> bytes:
     matching_files = fnmatch.filter(files, f'*{partial_file_name}*')
 
     if not matching_files:
-        print(f"Файл с частью имени '{partial_file_name}' не найден.")
+        logger.warning(f"Файл с частью имени '{partial_file_name}' не найден.")
         ftp.quit()
         return None
 
@@ -42,8 +45,8 @@ def ftp_download(partial_file_name: str, directory: str) -> bytes:
 
     try:
         ftp.retrbinary(f'RETR {file_name}', callback=handle_binary)
-    except Exception as e:
-        print(f"Ошибка при скачивании файла: {e}")
+    except Exception:
+        logger.exception("Ошибка при скачивании файла")
         ftp.quit()
         return None
 
@@ -53,11 +56,15 @@ def ftp_download(partial_file_name: str, directory: str) -> bytes:
 
 
 def http_download(file_path: str) -> bytes:
-    file_data = requests.get(f'{RECORD_URI}{file_path}', auth=(RECORD_USER, RECORD_PASS))
+    try:
+        file_data = requests.get(f'{RECORD_URI}{file_path}', auth=(RECORD_USER, RECORD_PASS))
+    except requests.exceptions.RequestException:
+        logger.exception(f"HTTP file download error: path={file_path}")
+        return None
     if file_data.status_code == 200:
         return file_data.content
-    else:
-        return None
+    logger.warning(f"HTTP file download failed: status={file_data.status_code}, path={file_path}")
+    return None
     
 
 def load_private_key(filepath, password=None):
@@ -77,13 +84,13 @@ def load_private_key(filepath, password=None):
 def download_file_sftp(remote_filepath):
     import paramiko
     if not SSH_KEY or not os.path.exists(SSH_KEY):
-        print("Private key not found")
+        logger.error("Private key not found")
         return None
 
     try:
         transport = paramiko.Transport((HOSTNAME, 22))
-    except Exception as e:
-        print("Cannot connect to host:", e)
+    except Exception:
+        logger.exception("Cannot connect to host")
         return None
 
     private_key = load_private_key(SSH_KEY)
@@ -94,10 +101,10 @@ def download_file_sftp(remote_filepath):
         with sftp.open(remote_filepath, 'rb') as file_data:
             content = file_data.read()
     except FileNotFoundError:
-        print(f"File not found: {remote_filepath}")
+        logger.warning(f"File not found: {remote_filepath}")
         content = None
-    except Exception as e:
-        print("SFTP error:", e)
+    except Exception:
+        logger.exception("SFTP error")
         content = None
     finally:
         if 'sftp' in locals():
@@ -111,7 +118,7 @@ def download_file_local(filepath):
         with open(filepath, 'rb') as f:
             content = f.read()
     except FileNotFoundError:
-        print(f"File not found: {filepath}")
+        logger.warning(f"File not found: {filepath}")
         content = None
     return content
 
@@ -126,9 +133,14 @@ def get_file(call_data):
     elif RECORD_PROTOCOL == "local":
         file_content = download_file_local(file_path)
     elif RECORD_PROTOCOL == "http":
-        file_data = requests.get(file_path, auth=(RECORD_USER, RECORD_PASS))
-        if file_data.status_code == 200:
-            file_content = file_data.content
+        try:
+            file_data = requests.get(file_path, auth=(RECORD_USER, RECORD_PASS))
+            if file_data.status_code == 200:
+                file_content = file_data.content
+            else:
+                logger.warning(f"HTTP file download failed: status={file_data.status_code}, path={file_path}")
+        except requests.exceptions.RequestException:
+            logger.exception(f"HTTP file download error: path={file_path}")
     if file_content:
         file_base64 = base64.b64encode(file_content).decode('utf-8')
         return file_base64

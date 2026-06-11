@@ -17,7 +17,7 @@ REDIS_DB = config.REDIS_DB
 APP_MODE = config.APP_MODE
 APP_DB = config.APP_DB
 
-logging.basicConfig(level=logging.INFO, format='%(message)s', filename='bitrix.log')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', filename='bitrix.log')
 logger = logging.getLogger()
 
 
@@ -40,7 +40,7 @@ def refresh_token():
         resp = requests.post(server_url, json=payload, headers=headers, timeout=10)
         resp.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"Error while refreshing token: {e}")
+        logger.error(f"Error while refreshing token: {e}")
         return False
 
     try:
@@ -50,7 +50,7 @@ def refresh_token():
             save_param("access_token", access_token)
             return access_token
     except Exception as e:
-        print(f"Error parsing response: {e}")
+        logger.error(f"Error parsing response: {e}")
         return False
 
 
@@ -194,7 +194,7 @@ def upload_file(call_data, file_base64):
         'FILENAME': os.path.basename(call_data['file_path']),
         'FILE_CONTENT': file_base64
     }
-    resp = call_bitrix('telephony.externalCall.attachRecord', payload)
+    call_bitrix('telephony.externalCall.attachRecord', payload)
 
 
 def finish_call(call_data: dict, user_id=None):
@@ -220,7 +220,7 @@ def finish_call(call_data: dict, user_id=None):
         'STATUS_CODE': call_status
     }
     resp = call_bitrix('telephony.externalcall.finish', payload)
-    if call_data.get('file_path'):
+    if call_data.get('file_path') and (call_status == 200 or call_data.get('is_voicemail')):
         file_base64 = utils.get_file(call_data)
         if file_base64:
             upload_file(call_data, file_base64)

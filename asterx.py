@@ -1,6 +1,7 @@
 import websockets
 import asyncio
 import json
+import logging
 from pprint import pprint
 
 import config
@@ -10,6 +11,15 @@ import ami_tools
 PBX_ID = config.PBX_ID
 APP_DB = config.APP_DB
 CONTROL_SERVER = config.CONTROL_SERVER_WS
+LOGGING = config.LOGGING
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.propagate = False
+if not logger.handlers:
+    handler = logging.FileHandler('asterx.log')
+    handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+    logger.addHandler(handler)
 
 
 async def listen(core_info=None):
@@ -23,7 +33,8 @@ async def listen(core_info=None):
                 while True:
                     msg = await websocket.recv()
                     data = json.loads(msg)
-                    print(data)
+                    if LOGGING in [1, 3]:
+                        logger.info(data)
                     event = data.get('event')
                     if event == 'setup_complete':
                         config.save_params({
@@ -42,7 +53,7 @@ async def listen(core_info=None):
                         if data.get('domain') and data.get('protocol') and data.get('access_token'):
                             bitrix.get_user_phone()
                         else:
-                            print("B24 cloud credentials are missing in setup_complete")
+                            logger.error("B24 cloud credentials are missing in setup_complete")
                     elif event == 'settings_update':
                         config.save_params({
                             "show_card": data.get('show_card', ''),
@@ -89,13 +100,13 @@ async def listen(core_info=None):
                                     }
                                     call_id = bitrix.register_call(payload, user_id)
                                     asyncio.create_task(ami_tools.originate(internal, context, external, call_id))
-                        except Exception as e:
-                            print(event, f"Error: {e}")
+                        except Exception:
+                            logger.exception(f"{event} error")
         except websockets.ConnectionClosed:
-            print("Connection closed. Reconnecting in 10 sec....")
+            logger.warning("Connection closed. Reconnecting in 10 sec....")
             await asyncio.sleep(10)
-        except Exception as e:
-            print(f"Error: {e}. Reconnecting in 10 sec...")
+        except Exception:
+            logger.exception("Control server listen error. Reconnecting in 10 sec...")
             await asyncio.sleep(10)
 
 def run(core_info=None):

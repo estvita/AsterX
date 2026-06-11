@@ -7,7 +7,7 @@ import asyncio
 from panoramisk import Manager, Message
 
 logger = logging.getLogger()
-logging.basicConfig(level=logging.INFO, format='%(message)s', filename='ami_poor.log')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', filename='ami_poor.log')
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import bitrix
