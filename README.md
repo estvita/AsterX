@@ -39,6 +39,7 @@ nano config.ini
 + [port] - Flask app port: 8000
 + [engine] - ami_redis (default), ami_sql or ari to connect asterisk
 + [logging] - 0 - disable, 1 - bitrix, 2 - AMI, 3 - full (1+2)
++ [heartbeat_interval] - control server heartbeat interval in seconds. Default: 300. It must be lower than server-side `ASTERX_GROUP_EXPIRY`.
 
 [bitrix] parameters:
 + [url] - Address of the incoming webhook.

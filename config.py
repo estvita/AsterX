@@ -14,6 +14,7 @@ APP_PORT = config.get('app', 'port', fallback=8000)
 REDIS_DB = config.get('app', 'redis_db', fallback=1)
 APP_DB = config.get('app', 'app_db', fallback="app.db")
 LOGGING = int(config.get('app', 'logging', fallback=0))
+HEARTBEAT_INTERVAL = int(config.get('app', 'heartbeat_interval', fallback=60))
 CONTROL_SERVER_WS = config.get('app', 'control_server_ws', fallback="wss://gulin.kz")
 CONTROL_SERVER_HTTP = config.get('app', 'control_server_http', fallback="https://gulin.kz")
 

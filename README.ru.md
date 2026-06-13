@@ -35,6 +35,7 @@ nano config.ini
 + [port] - Порт запуска приложения 8000
 + [engine] - ami_reis (по умолчанию), ami_sql или ari для подключения к Asterisk
 + [logging] - True/False - включить/отключить запись получаемых событий в файл.
++ [heartbeat_interval] - период отправки heartbeat на сервер управления в секундах. По умолчанию 300. Должен быть меньше `ASTERX_GROUP_EXPIRY` на сервере.
 
 [bitrix]
 + [url] - Адрес воходящего вебхука.
