@@ -149,20 +149,13 @@ def update_contexts_table(contexts):
     _CONTEXT_CACHE = context_cache
 
 def get_param(key, section='app', default=None):
-    # Если локальный режим — только config
-    if APP_MODE == 'local':
-        try:
-            return config.get(section, key, fallback=default)
-        except Exception:
-            return default
-    elif APP_MODE == 'cloud':
-        val = fetch_from_db(key)
-        if val is not None:
-            return val
-        try:
-            return config.get(section, key, fallback=default)
-        except Exception:
-            return default
+    val = fetch_from_db(key)
+    if val is not None:
+        return val
+    try:
+        return config.get(section, key, fallback=default)
+    except Exception:
+        return default
         
 def get_bool_param(key, section='app', default=False):
     value = get_param(key, section=section, default=default)
@@ -172,7 +165,20 @@ def get_bool_param(key, section='app', default=False):
 
 
 def get_context_type(context):
+    global _CONTEXT_CACHE
+
     if APP_MODE == 'local':
+        _ensure_db()
+        if _CONTEXT_CACHE is None:
+            conn = sqlite3.connect(APP_DB)
+            cur = conn.execute("SELECT context, type FROM context")
+            _CONTEXT_CACHE = dict(cur.fetchall())
+            conn.close()
+        context_type = _CONTEXT_CACHE.get(context)
+        if context_type == 'excluded':
+            return None
+        if context_type in {'external', 'internal'}:
+            return context_type
         if context in EXTERNAL_CONTEXTS:
             return "external"
         elif context in INTERNAL_CONTEXTS:
@@ -180,8 +186,6 @@ def get_context_type(context):
         else:
             return None
     elif APP_MODE == 'cloud':
-        global _CONTEXT_CACHE
-
         _ensure_db()
         if _CONTEXT_CACHE is not None:
             return _CONTEXT_CACHE.get(context)

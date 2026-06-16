@@ -27,11 +27,11 @@ if not logger.handlers:
 
 async def run_action(action_obj):
     manager = Manager.from_config(config_file)
-    await manager.connect()
-    result = await manager.send_action(action_obj)
-    # pprint(result)
-    manager.close()
-    return result
+    try:
+        await manager.connect()
+        return await manager.send_action(action_obj)
+    finally:
+        manager.close()
 
 
 def update_db_user_context(peer, peer_type, context, context_map=None):

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>gulin.kz: AsterX</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #222; }
+    main { max-width: 980px; margin: 0 auto; }
+    h1, h2 { margin: 0 0 16px; }
+    section { margin: 0 0 28px; }
+    label { display: block; margin: 12px 0 4px; font-weight: 600; }
+    input, select { box-sizing: border-box; width: 100%; padding: 8px; }
+    button { padding: 9px 14px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+    .muted { color: #666; }
+    .checkbox { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+    .checkbox input { width: auto; }
+    footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; color: #666; }
+    footer a { color: #333; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <h1>AsterX</h1>
+    {% if password_enabled %}
+      <form method="post" action="/logout">
+        <button type="submit">Sign out</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <section>
+    <p><b>Address:</b> {{ portal or 'not connected' }}</p>
+    <p><b>member_id:</b> {{ member_id or 'not set' }}</p>
+    <p><b>Token valid until:</b> {{ expires_text }}</p>
+    <form method="post" action="/refresh-token">
+      <button type="submit">Refresh token</button>
+    </form>
+  </section>
+
+  <form method="post" action="/settings">
+    <div class="columns">
+      <section>
+        <h2>Settings</h2>
+        <div class="row">
+          <div>
+            <label>client_id</label>
+            <input name="client_id" value="{{ settings.client_id }}">
+          </div>
+          <div>
+            <label>client_secret</label>
+            <input name="client_secret" value="{{ settings.client_secret }}">
+          </div>
+        </div>
+
+        <label>Default user ID</label>
+        <input name="default_user_id" value="{{ settings.default_user_id }}">
+
+        <label>Show call card</label>
+        <select name="show_card">
+          <option value="0" {% if settings.show_card == '0' %}selected{% endif %}>Do not show</option>
+          <option value="1" {% if settings.show_card == '1' %}selected{% endif %}>On call start</option>
+          <option value="2" {% if settings.show_card == '2' %}selected{% endif %}>On answer</option>
+        </select>
+
+        <label>Create CRM entity</label>
+        <select name="crm_create">
+          <option value="0" {% if settings.crm_create == '0' %}selected{% endif %}>Do not create</option>
+          <option value="1" {% if settings.crm_create == '1' %}selected{% endif %}>Always</option>
+          <option value="2" {% if settings.crm_create == '2' %}selected{% endif %}>Inbound only</option>
+          <option value="3" {% if settings.crm_create == '3' %}selected{% endif %}>Outbound only</option>
+        </select>
+
+        <label class="checkbox">
+          <input type="checkbox" name="smart_route" value="1" {% if settings.smart_route == '1' %}checked{% endif %}>
+          Connect to manager
+        </label>
+
+        <label class="checkbox">
+          <input type="checkbox" name="vm_send" value="1" {% if settings.vm_send == '1' %}checked{% endif %}>
+          Send voicemail
+        </label>
+      </section>
+
+      <section>
+        <h2>Contexts</h2>
+        {% if contexts %}
+          <table>
+            <thead>
+              <tr><th>Context</th><th>Type</th></tr>
+            </thead>
+            <tbody>
+              {% for item in contexts %}
+                <tr>
+                  <td>{{ item.context }}</td>
+                  <td>
+                    <select name="context:{{ item.context }}">
+                      <option value="excluded" {% if item.type == 'excluded' %}selected{% endif %}>Exclude</option>
+                      <option value="internal" {% if item.type == 'internal' %}selected{% endif %}>Internal</option>
+                      <option value="external" {% if item.type == 'external' %}selected{% endif %}>External</option>
+                    </select>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="muted">No contexts found yet.</p>
+        {% endif %}
+      </section>
+    </div>
+    <p><button type="submit">Save</button></p>
+  </form>
+
+  <footer>
+    <a href="https://github.com/estvita/AsterX" target="_blank" rel="noopener">GitHub</a>
+    ·
+    <a href="https://gulin.kz" target="_blank" rel="noopener">gulin.kz</a>
+  </footer>
+</main>
+</body>
+</html>

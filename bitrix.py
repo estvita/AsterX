@@ -7,11 +7,10 @@ import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config
-from config import get_param, save_param
+from config import get_param, save_params
 import utils
 import ami_tools
 
-B24_URL = config.B24_URL
 LOGGING = config.LOGGING
 REDIS_DB = config.REDIS_DB
 APP_MODE = config.APP_MODE
@@ -21,23 +20,84 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', filena
 logger = logging.getLogger()
 
 
+def save_install_auth(form):
+    current_member_id = config.fetch_from_db('member_id')
+    incoming_member_id = form.get('auth[member_id]')
+    if current_member_id and incoming_member_id and current_member_id != incoming_member_id:
+        logger.error(
+            f"B24 install rejected: current member_id={current_member_id}, incoming member_id={incoming_member_id}"
+        )
+        return None
+
+    field_map = {
+        'access_token': 'auth[access_token]',
+        'refresh_token': 'auth[refresh_token]',
+        'expires': 'auth[expires]',
+        'expires_in': 'auth[expires_in]',
+        'scope': 'auth[scope]',
+        'domain': 'auth[domain]',
+        'server_endpoint': 'auth[server_endpoint]',
+        'client_endpoint': 'auth[client_endpoint]',
+        'member_id': 'auth[member_id]',
+        'user_id': 'auth[user_id]',
+        'application_token': 'auth[application_token]',
+    }
+    params = {
+        key: form.get(form_key)
+        for key, form_key in field_map.items()
+        if form.get(form_key)
+    }
+    for key in ('client_id', 'client_secret'):
+        value = form.get(key) or form.get(f'auth[{key}]')
+        if value:
+            params[key] = value
+    if params:
+        save_params(params)
+    return params
+
+
+def save_oauth_response(data):
+    keys = (
+        'access_token',
+        'refresh_token',
+        'expires',
+        'expires_in',
+        'scope',
+        'member_id',
+        'user_id',
+        'status',
+    )
+    params = {key: data.get(key) for key in keys if data.get(key) is not None}
+    if params:
+        save_params(params)
+    return params
+
+
+def bind_events(handler_url):
+    for event in ('ONEXTERNALCALLSTART', 'ONEXTERNALCALLBACKSTART'):
+        call_bitrix('event.bind', {
+            'event': event,
+            'handler': handler_url,
+        })
+
+
 def refresh_token():
-    member_id = get_param('member_id')
-    if not member_id:
+    refresh_token_value = config.fetch_from_db('refresh_token')
+    client_id = config.fetch_from_db('client_id')
+    client_secret = config.fetch_from_db('client_secret')
+    if not refresh_token_value or not client_id or not client_secret:
+        logger.error("B24 OAuth credentials are not configured")
         return False
 
     payload = {
-        'server_id': config.PBX_ID,
-        'member_id': member_id,
-    }
-    server_url = f"{config.CONTROL_SERVER_HTTP}/api/asterx/refresh_token/"
-
-    headers = {
-        'Content-Type': 'application/json'
+        'grant_type': 'refresh_token',
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'refresh_token': refresh_token_value,
     }
 
     try:
-        resp = requests.post(server_url, json=payload, headers=headers, timeout=10)
+        resp = requests.get('https://oauth.bitrix24.tech/oauth/token/', params=payload, timeout=10)
         resp.raise_for_status()
     except requests.exceptions.RequestException as e:
         logger.error(f"Error while refreshing token: {e}")
@@ -47,7 +107,7 @@ def refresh_token():
         data = resp.json()
         access_token = data.get("access_token")
         if access_token:
-            save_param("access_token", access_token)
+            save_oauth_response(data)
             return access_token
     except Exception as e:
         logger.error(f"Error parsing response: {e}")
@@ -64,10 +124,18 @@ def call_bitrix(method, payload=None, retried=False):
             return None
         b24_url = f"{proto}://{domain}/rest/{method}?auth={access_token}"
     else:
-        b24_url = f'{B24_URL}{method}'
+        client_endpoint = config.fetch_from_db('client_endpoint')
+        access_token = config.fetch_from_db('access_token')
+        if client_endpoint and access_token:
+            b24_url = f"{client_endpoint.rstrip('/')}/{method}?auth={access_token}"
+        elif config.B24_URL:
+            b24_url = f"{config.B24_URL.rstrip('/')}/{method}"
+        else:
+            logger.error(f"B24 local credentials are not configured for method {method}")
+            return None
     try:
         resp = requests.post(b24_url, json=payload)
-        if resp.status_code == 401 and APP_MODE == 'cloud':
+        if resp.status_code == 401:
             data = resp.json()
             if data.get('error') == 'expired_token':
                 logger.error(data)

@@ -1,85 +1,72 @@
-# AsterX: Sync calls with Bitrix24 via ARI, AMI or API (Yeastar)
+# AsterX
 
-https://github.com/estvita/AsterX
+AsterX sends Asterisk call history and recordings to Bitrix24 through AMI.
 
-[Инструкция на русском](README.ru.md)
+## Modes
 
-Tested with Asterisk v. 16, 18, 20 (FreePBX) and [Yeastar](/yeastar/) S50 
+- Bitrix24 local app: install the app in Bitrix24, store OAuth tokens locally, and receive `ONEXTERNALCALLSTART` / `ONEXTERNALCALLBACKSTART` events.
+- Incoming webhook only: set `[bitrix] url` when you only need to send call statistics to Bitrix24.
 
-This script allows sending call history and recording files from Asterisk (FreePBX) to Bitrix24.
+## Setup
 
-## Configuration on the Bitrix24 Side
-+ Incoming webhook with permissions: crm, user, telephony. Integrations > Rest API > Other > Incoming Webhook.
-+ Outgoing webhook for the ONEXTERNALCALLSTART, ONEXTERNALCALLBACKSTART events. In the "URL of your handler" field, enter the address
- http://X.X.X.X:8000/asterx
-
-### Installation
-
-+ [Redis Stack](https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-stack/) 
-+ or SQLite 
-
-is used for temporary storage of call information.
-
-
-```
-cd /opt
-git clone https://github.com/estvita/asterx.git
-cd asterx
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements/local_sql.txt
 cp examples/config.ini config.ini
-nano config.ini
 ```
 
-### Fill in the Data in [config.ini](examples/config.ini)
+Edit `config.ini`:
 
+```ini
 [app]
-+ [debug] - Debug mode (True/False)
-+ [port] - Flask app port: 8000
-+ [engine] - ami_redis (default), ami_sql or ari to connect asterisk
-+ [logging] - 0 - disable, 1 - bitrix, 2 - AMI, 3 - full (1+2)
-+ [heartbeat_interval] - control server heartbeat interval in seconds. Default: 300. It must be lower than server-side `ASTERX_GROUP_EXPIRY`.
+mode = local
+handler_url = https://your-public-url/asterx
+password =
 
-[bitrix] parameters:
-+ [url] - Address of the incoming webhook.
-+ [token] - Issued by Bitrix when creating an outgoing webhook.
-+ [crm_create] - Whether to create a CRM entity or not. 0 - None, 1 - All, 2 - only for inbound call, 3 - only for outbound call
-+ [show_card] -  0 - not show, 1 - on call, 2 - on answer
-+ [default_user_id] - Lost incoming calls are registered to this user (default 1).
+[bitrix]
+url =
 
-[asterisk] parameters:
-+ [ws_type] - wss/ws - required for connecting to ARI.
-+ [host] - PBX address (default "localhost").
-+ [port] - AMI/ARI port.
-+ [username] - AMI/ARI username.
-+ [secret] - AMI/ARI password.
-+ [records_protocol] sftp, http or local
-+ [key_filepath] - ssh key pach for sftp
-+ [records_uri] - URL for call recordings with HTTP Basic Auth (https://example.com/monitor/). Example Apache config: [monitor.conf]
-+ [record_user] - Basic Auth login or ssh user (for sftp)
-+ [record_pass] - Basic Auth password.
-+ [internal_contexts] - List of internal (outgoing) call contexts. Default: "from-internal".
-+ [external_contexts] - List of inbound call contexts. Default: "from-pstn".
-
-## Running the Integration
-
-```
-cd /opt/bitrix-asterisk
-source .venv/bin/activate
-
-+ ARI/AMI: python main.py
-+ Event Handler: gunicorn --bind 0.0.0.0:8000 wsgi:app
-+ Yeastar API: python yeastar/app.py
-
+[asterisk]
+host = localhost
+port = 5038
+username = asterx
+secret = secret
 ```
 
+`handler_url` is required for Bitrix24 event subscription. `password` protects the web UI when set.
 
-## Automatic Startup
-Example [systemd](/examples/asterx.service) configuration for automatic startup:
+## Run
 
+```bash
+python main.py
+python app.py
 ```
-cp /opt/bitrix-asterisk/examples/asterx.service /etc/systemd/system/asterx.service
-systemctl enable asterx.service
-systemctl start asterx.service
+
+Open:
+
+```text
+http://localhost:8000/
+```
+
+The web UI shows the connected portal, token expiration, Bitrix24 app credentials, call settings, and Asterisk context types.
+
+## Bitrix24
+
+For local app mode, set the app handler URL to:
+
+```text
+https://your-public-url/asterx
+```
+
+On `ONAPPINSTALL`, AsterX stores portal tokens and subscribes to:
+
+- `ONEXTERNALCALLSTART`
+- `ONEXTERNALCALLBACKSTART`
+
+For webhook-only mode, leave the portal uninstalled and set:
+
+```ini
+[bitrix]
+url = https://example.bitrix24.com/rest/1/webhook/
 ```

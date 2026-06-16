@@ -13,7 +13,6 @@ import requests
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from bitrix import *
-from project import project_data
 
 from get_token import send_heartbeat
 
@@ -47,7 +46,7 @@ def update_heartbeat_periodically():
 
 @app.route('/', methods=['GET', 'POST'])
 def project_info():
-    return jsonify(project_data)
+    return jsonify({'app': 'AsterX Yeastar'})
 
 
 async def ys_api(data: dict, method: str):

@@ -6,7 +6,7 @@ import config
 
 
 CALL_TTL = 12 * 60 * 60
-KEY_PREFIX = "ami:call:"
+KEY_PREFIX = "asterx:call:"
 
 r = redis.Redis(host="localhost", port=6379, db=int(config.REDIS_DB), decode_responses=True)
 
