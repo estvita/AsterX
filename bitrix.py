@@ -82,6 +82,38 @@ def bind_events(handler_url):
 
 
 def refresh_token():
+    if APP_MODE == 'cloud':
+        member_id = get_param('member_id')
+        if not member_id:
+            return False
+
+        payload = {
+            'server_id': config.PBX_ID,
+            'member_id': member_id,
+        }
+        server_url = f"{config.CONTROL_SERVER_HTTP}/api/asterx/refresh_token/"
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        try:
+            resp = requests.post(server_url, json=payload, headers=headers, timeout=10)
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error while refreshing token: {e}")
+            return False
+
+        try:
+            data = resp.json()
+            access_token = data.get("access_token")
+            if access_token:
+                save_params({"access_token": access_token})
+                return access_token
+        except Exception as e:
+            logger.error(f"Error parsing response: {e}")
+            return False
+
     refresh_token_value = config.fetch_from_db('refresh_token')
     client_id = config.fetch_from_db('client_id')
     client_secret = config.fetch_from_db('client_secret')
