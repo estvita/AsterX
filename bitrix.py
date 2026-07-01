@@ -199,15 +199,15 @@ def get_user_id_remote(user_phone):
     }
     resp = call_bitrix('user.get', payload)
     if not resp:
-        return get_param('default_user_id', section='bitrix', default='1')
+        return None
     resp_data = resp.json()
     resp.raise_for_status()
     result = resp_data.get('result', [])
     if result:
         return result[0].get('ID')
-    return get_param('default_user_id', section='bitrix', default='1')
+    return None
 
-def get_user_id(user_phone):
+def get_user_id(user_phone, use_default=True):
     conn = sqlite3.connect(APP_DB)
     cur = conn.execute("SELECT user_id FROM users WHERE user_phone = ?", (user_phone,))
     row = cur.fetchone()
@@ -217,6 +217,9 @@ def get_user_id(user_phone):
 
     # Нет локально, ищем в Bitrix
     remote_id = get_user_id_remote(user_phone)
+
+    if not remote_id and use_default:
+        remote_id = get_param('default_user_id', section='bitrix', default='1')
 
     # Сохраним в случае успеха (не дефолтного)
     if remote_id and remote_id != get_param('default_user_id', section='bitrix', default='1'):
@@ -396,8 +399,8 @@ def get_user_phone(user_id=None):
     conn.commit()
     conn.close()
 
-def card_action(call_id, user_phone, action):
-    user_id = get_user_id(user_phone)
+def card_action(call_id, user_phone, action="show"):
+    user_id = get_user_id(user_phone, use_default=False)
     if user_id:
         payload = {
             'CALL_ID': call_id,
