@@ -99,7 +99,8 @@ async def ami_callback(mngr: Manager, message: Message):
             context_type = config.get_context_type(context)
             initial_context_type = config.get_context_type(call_data['context'])
             if ('exclude' in {context_type, initial_context_type} or
-                context_type == initial_context_type == 'internal'):
+                (context_type == initial_context_type == 'internal' and
+                 not call_data.get('call_id'))):
                 call_store.update_call_data(linked_id, ignored=True, pending=False)
                 return
             call_store.update_call_data(linked_id, pending=False)

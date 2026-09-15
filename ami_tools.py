@@ -112,6 +112,7 @@ def save_call_data(data):
         external=external,
         internal=internal,
         call_id=call_id,
+        ignored=False,
     )
 
 
@@ -124,7 +125,7 @@ async def originate(internal, context, external, call_id=None):
         call = await callmanager.send_originate(
             {
                 'Action': 'Originate',
-                'Channel': f'Local/{internal}@{context}',
+                'Channel': f'Local/{internal}@{context}/n',
                 'WaitTime': 20,
                 'CallerID': external,
                 'Exten': external,
