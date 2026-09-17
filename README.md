@@ -59,6 +59,10 @@ Parameters are read from `config.ini`. Values saved through the web UI override 
 | `crm_create` | `1` | CRM entity creation mode: `0` disabled, `1` all calls, `2` incoming only, `3` outgoing only. |
 | `smart_route` | `0` | Enables smart routing for incoming calls when set to `1`. |
 | `vm_send` | `1` | Sends voicemail recordings to Bitrix24 when enabled. |
+| `client_first` | `0` | Click-to-call order: `0` calls the operator first, `1` calls the client first. |
+| `wait_time` | `20` | Originate wait time in seconds. |
+
+In cloud mode, `client_first` and `wait_time` can also be updated by the `setup_complete` and `settings_update` WebSocket events. Omitted fields use their default values.
 
 ### `[bitrix]`
 

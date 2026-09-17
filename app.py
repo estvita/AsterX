@@ -72,6 +72,8 @@ def get_app_settings():
         'crm_create': '1',
         'smart_route': '0',
         'vm_send': '1',
+        'client_first': '0',
+        'wait_time': '20',
     }
     return {key: config.fetch_from_db(key) or default for key, default in keys.items()}
 
@@ -145,6 +147,8 @@ def save_settings():
         'crm_create': request.form.get('crm_create', '1'),
         'smart_route': request.form.get('smart_route', '0'),
         'vm_send': request.form.get('vm_send', '0'),
+        'client_first': request.form.get('client_first', '0'),
+        'wait_time': request.form.get('wait_time', '20'),
     })
     contexts = []
     for key, value in request.form.items():

@@ -139,8 +139,8 @@ async def ami_callback(mngr: Manager, message: Message):
             call_store.update_call_data(linked_id, internal=internal_phone)
             if config.get_param('show_card', default="1") == "2":
                 bitrix.card_action(call_data.get('call_id'), internal_phone)
-        if call_data.get('status') != 200:
-            dial_status = STATUSES.get(message.DialStatus)
+        if call_data.get('uniqueid') == uniqueid:
+            dial_status = STATUSES.get(message.DialStatus, 304)
             call_store.update_call_data(linked_id, status=dial_status)
     elif event == "Hangup":
         if call_data.get('uniqueid') == uniqueid:

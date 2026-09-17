@@ -61,6 +61,9 @@
         <label>Default user ID</label>
         <input name="default_user_id" value="{{ settings.default_user_id }}">
 
+        <label>Originate wait time</label>
+        <input type="number" name="wait_time" min="1" value="{{ settings.wait_time }}">
+
         <label>Show call card</label>
         <select name="show_card">
           <option value="0" {% if settings.show_card == '0' %}selected{% endif %}>Do not show</option>
@@ -84,6 +87,11 @@
         <label class="checkbox">
           <input type="checkbox" name="vm_send" value="1" {% if settings.vm_send == '1' %}checked{% endif %}>
           Send voicemail
+        </label>
+
+        <label class="checkbox">
+          <input type="checkbox" name="client_first" value="1" {% if settings.client_first == '1' %}checked{% endif %}>
+          Call client first
         </label>
       </section>
 

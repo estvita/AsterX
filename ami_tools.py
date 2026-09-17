@@ -1,8 +1,6 @@
 import os
 import sys
 import time
-import json
-import asyncio
 import sqlite3
 import logging
 from pprint import pprint
@@ -122,30 +120,34 @@ async def originate(internal, context, external, call_id=None):
     try:
         callmanager = CallManager.from_config(config_file)
         await callmanager.connect()
+        client_first = config.get_bool_param('client_first', default=False)
+        wait_time = int(config.get_param('wait_time', default=20))
+        channel_target = external if client_first else internal
+        caller_id = internal if client_first else external
+        extension = internal if client_first else external
+
         call = await callmanager.send_originate(
             {
                 'Action': 'Originate',
-                'Channel': f'Local/{internal}@{context}/n',
-                'WaitTime': 20,
-                'CallerID': external,
-                'Exten': external,
+                'Channel': f'Local/{channel_target}@{context}/n',
+                'WaitTime': wait_time,
+                'CallerID': caller_id,
+                'Exten': extension,
             }
         )
         data_saved = False
         while not call.queue.empty():
             event = call.queue.get_nowait()
-            linkedid = event.Linkedid
-            uniqueid = event.Uniqueid
             if call_id and event.Event == 'Newchannel' and not data_saved:
                 save_call_data((
-                    linkedid,
+                    event.Linkedid,
                     time.time(),
                     context,
-                    uniqueid,
+                    event.Uniqueid,
                     1,
                     external,
                     internal,
-                    call_id
+                    call_id,
                 ))
                 data_saved = True
     except Exception:

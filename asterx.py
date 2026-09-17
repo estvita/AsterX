@@ -50,7 +50,7 @@ async def listen(core_info=None):
                             logger.info(data)
                         event = data.get('event')
                         if event == 'setup_complete':
-                            config.save_params({
+                            params = {
                                 "enabled": 1,
                                 "member_id": data.get('member_id', ''),
                                 "domain": data.get('domain', ''),
@@ -62,19 +62,25 @@ async def listen(core_info=None):
                                 "vm_send": data.get('vm_send', ''),
                                 "smart_route": data.get('smart_route', ''),
                                 "default_user_id": data.get('default_user_id', ''),
-                            })
+                                "client_first": data.get('client_first', '0'),
+                                "wait_time": data.get('wait_time', '20'),
+                            }
+                            config.save_params(params)
                             if data.get('domain') and data.get('protocol') and data.get('access_token'):
                                 bitrix.get_user_phone()
                             else:
                                 logger.error("B24 cloud credentials are missing in setup_complete")
                         elif event == 'settings_update':
-                            config.save_params({
+                            params = {
                                 "show_card": data.get('show_card', ''),
                                 "crm_create": data.get('crm_create', ''),
                                 "vm_send": data.get('vm_send', ''),
                                 "smart_route": data.get('smart_route', ''),
                                 "default_user_id": data.get('default_user_id', ''),
-                            })
+                                "client_first": data.get('client_first', '0'),
+                                "wait_time": data.get('wait_time', '20'),
+                            }
+                            config.save_params(params)
                         elif event == 'refresh_users':
                             config.clear_table('users')                        
                             bitrix.get_user_phone()
