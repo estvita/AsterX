@@ -121,20 +121,22 @@ async def originate(internal, context, external, call_id=None):
         callmanager = CallManager.from_config(config_file)
         await callmanager.connect()
         client_first = config.get_bool_param('client_first', default=False)
-        wait_time = int(config.get_param('wait_time', default=20))
+        timeout = int(config.get_param('timeout', default=20))
         channel_target = external if client_first else internal
         caller_id = internal if client_first else external
         extension = internal if client_first else external
 
-        call = await callmanager.send_originate(
-            {
-                'Action': 'Originate',
-                'Channel': f'Local/{channel_target}@{context}/n',
-                'WaitTime': wait_time,
-                'CallerID': caller_id,
-                'Exten': extension,
-            }
-        )
+        originate_action = {
+            'Action': 'Originate',
+            'Channel': f'Local/{channel_target}@{context}/n',
+            'Timeout': timeout * 1000,
+            'CallerID': caller_id,
+            'Exten': extension,
+        }
+        if call_id:
+            originate_action['Variable'] = f'__ASTERX_CALL_ID={call_id}'
+
+        call = await callmanager.send_originate(originate_action)
         data_saved = False
         while not call.queue.empty():
             event = call.queue.get_nowait()

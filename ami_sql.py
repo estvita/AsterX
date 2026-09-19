@@ -52,6 +52,23 @@ async def ami_callback(mngr: Manager, message: Message):
     uniqueid = message.Uniqueid
     call_data = call_store.get_call_data(linked_id)
 
+    if event == "VarSet":
+        if message.Variable == "MIXMONITOR_FILENAME":
+            call_store.update_call_data(linked_id, file_path=message.Value)
+            return
+        elif message.Variable == "__ASTERX_CALL_ID":
+            call_store.update_call_data(
+                linked_id,
+                call_id=message.Value,
+                ignored=False,
+                pending=False,
+            )
+        elif message.Variable == "VM_MESSAGEFILE" and config.get_bool_param('vm_send', default=True):
+            call_store.update_call_data(linked_id, 
+                                        file_path=f"{message.Value}.wav",
+                                        is_voicemail=True)
+        return
+
     if call_data and call_data.get('ignored'):
         if event == "Hangup" and call_data.get('uniqueid') == uniqueid:
             call_store.delete_call_data(linked_id)
@@ -117,14 +134,6 @@ async def ami_callback(mngr: Manager, message: Message):
                     bitrix.card_action(call_id, internal_phone)
     elif not call_data:
         return
-
-    elif event == "VarSet":
-        if message.Variable == "MIXMONITOR_FILENAME":
-            call_store.update_call_data(linked_id, file_path=message.Value)
-        elif message.Variable == "VM_MESSAGEFILE" and config.get_bool_param('vm_send', default=True):
-            call_store.update_call_data(linked_id, 
-                                        file_path=f"{message.Value}.wav",
-                                        is_voicemail=True)
 
     elif event == "MIXMONITORCALL_BEGIN":
         call_store.update_call_data(linked_id, file_path=message.File)

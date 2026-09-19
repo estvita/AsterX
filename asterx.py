@@ -63,7 +63,7 @@ async def listen(core_info=None):
                                 "smart_route": data.get('smart_route', ''),
                                 "default_user_id": data.get('default_user_id', ''),
                                 "client_first": data.get('client_first', '0'),
-                                "wait_time": data.get('wait_time', '20'),
+                                "timeout": data.get('timeout', '20'),
                             }
                             config.save_params(params)
                             if data.get('domain') and data.get('protocol') and data.get('access_token'):
@@ -78,7 +78,7 @@ async def listen(core_info=None):
                                 "smart_route": data.get('smart_route', ''),
                                 "default_user_id": data.get('default_user_id', ''),
                                 "client_first": data.get('client_first', '0'),
-                                "wait_time": data.get('wait_time', '20'),
+                                "timeout": data.get('timeout', '20'),
                             }
                             config.save_params(params)
                         elif event == 'refresh_users':
