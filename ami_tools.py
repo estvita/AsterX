@@ -123,18 +123,32 @@ async def originate(internal, context, external, call_id=None):
         client_first = config.get_bool_param('client_first', default=False)
         timeout = int(config.get_param('timeout', default=20))
         channel_target = external if client_first else internal
-        caller_id = internal if client_first else external
         extension = internal if client_first else external
+        channel = f'Local/{channel_target}@{context}/n'
+
+        peer_type = None
+        if not client_first:
+            conn = sqlite3.connect(APP_DB)
+            try:
+                row = conn.execute(
+                    'SELECT type FROM users WHERE user_phone = ?',
+                    (internal,),
+                ).fetchone()
+                peer_type = row[0]
+                channel = f'{peer_type}/{internal}'
+            finally:
+                conn.close()
 
         originate_action = {
             'Action': 'Originate',
-            'Channel': f'Local/{channel_target}@{context}/n',
+            'Channel': channel,
             'Timeout': timeout * 1000,
-            'CallerID': caller_id,
+            'CallerID': extension,
             'Exten': extension,
+            'Context': context,
+            'Priority': 1,
+            'Variable': f'__ASTERX_CALL_ID={call_id}'
         }
-        if call_id:
-            originate_action['Variable'] = f'__ASTERX_CALL_ID={call_id}'
 
         call = await callmanager.send_originate(originate_action)
         data_saved = False
