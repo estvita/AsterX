@@ -73,6 +73,7 @@ def get_app_settings():
         'smart_route': '0',
         'vm_send': '1',
         'client_first': '0',
+        'all_statuses': 'false',
         'timeout': '20',
     }
     return {key: config.fetch_from_db(key) or default for key, default in keys.items()}
@@ -148,6 +149,7 @@ def save_settings():
         'smart_route': request.form.get('smart_route', '0'),
         'vm_send': request.form.get('vm_send', '0'),
         'client_first': request.form.get('client_first', '0'),
+        'all_statuses': request.form.get('all_statuses', 'false'),
         'timeout': request.form.get('timeout', '20'),
     })
     contexts = []

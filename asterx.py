@@ -63,6 +63,7 @@ async def listen(core_info=None):
                                 "smart_route": data.get('smart_route', ''),
                                 "default_user_id": data.get('default_user_id', ''),
                                 "client_first": data.get('client_first', '0'),
+                                "all_statuses": data.get('all_statuses', False),
                                 "timeout": data.get('timeout', '20'),
                             }
                             config.save_params(params)
@@ -78,6 +79,7 @@ async def listen(core_info=None):
                                 "smart_route": data.get('smart_route', ''),
                                 "default_user_id": data.get('default_user_id', ''),
                                 "client_first": data.get('client_first', '0'),
+                                "all_statuses": data.get('all_statuses', False),
                                 "timeout": data.get('timeout', '20'),
                             }
                             config.save_params(params)

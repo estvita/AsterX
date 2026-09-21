@@ -93,6 +93,11 @@
           <input type="checkbox" name="client_first" value="1" {% if settings.client_first == '1' %}checked{% endif %}>
           Call client first
         </label>
+
+        <label class="checkbox">
+          <input type="checkbox" name="all_statuses" value="true" {% if settings.all_statuses|lower == 'true' %}checked{% endif %}>
+          Send all call statuses
+        </label>
       </section>
 
       <section>

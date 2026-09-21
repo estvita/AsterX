@@ -60,6 +60,7 @@ Parameters are read from `config.ini`. Values saved through the web UI override 
 | `smart_route` | `0` | Enables smart routing for incoming calls when set to `1`. |
 | `vm_send` | `1` | Sends voicemail recordings to Bitrix24 when enabled. |
 | `client_first` | `0` | Click-to-call order: `0` calls the operator first, `1` calls the client first. |
+| `all_statuses` | `false` | Sends all mapped call statuses to Bitrix24 when `true`; otherwise always sends `304`. |
 | `timeout` | `20` | Originate wait time in seconds. |
 
 ### `[bitrix]`
