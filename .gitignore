@@ -166,3 +166,4 @@ log.txt
 test.py
 *.db
 .codex
+scripts/manual_originate.py

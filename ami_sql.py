@@ -153,6 +153,8 @@ async def ami_callback(mngr: Manager, message: Message):
                 dial_status = 200
             elif config.get_bool_param('all_statuses', default=False):
                 dial_status = STATUSES.get(message.DialStatus, 304)
+            else:
+                return
             call_store.update_call_data(linked_id, status=dial_status)
     elif event == "Hangup":
         if call_data.get('uniqueid') == uniqueid:
